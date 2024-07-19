@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io::{Read, Seek};
 
 use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error};
 
@@ -12,7 +12,7 @@ pub struct FtypBox {
 }
 
 impl FtypBox {
-    pub fn read<'a, T: Read>(parser: &mut BoxParser<'a, T>, header: BoxHeader) -> Result<Self, Error> {
+    pub fn read<'a, T: Read + Seek>(parser: &mut BoxParser<'a, T>, header: BoxHeader) -> Result<Self, Error> {
         let size = header.size;
         if size < 16 || size % 4 != 0 {
             return Err(Error::InvalidData("ftyp has a wrong size".to_owned()));
@@ -34,6 +34,7 @@ impl FtypBox {
             };
             compatible_brands.push(brand);
         }
+        parser.clean();
         Ok(Self {
             header,
             major_brand,
@@ -43,7 +44,7 @@ impl FtypBox {
     }
 }
 impl BoxReader for FtypBox {
-    fn parse<'a, T: Read>(parser: &mut BoxParser<'a, T>) -> Result<Self, Error> {
+    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<'a, T>) -> Result<Self, Error> {
         let header = parser.next_header_with_type(BoxType::FileType)?;
         FtypBox::read(parser, header)
     }

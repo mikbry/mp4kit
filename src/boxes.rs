@@ -3,7 +3,7 @@ pub mod ftyp;
 pub mod moov;
 pub mod mvhd;
 
-use std::io::Read;
+use std::io::{Read, Seek};
 
 use crate::{box_definitions, BoxParser, BoxReader, Error};
 pub use ftyp::FtypBox as FtypBox;
@@ -17,8 +17,9 @@ pub struct BoxHeader {
 }
 
 impl BoxReader for BoxHeader {
-    fn parse<'a, T: Read>(parser: &mut BoxParser<'a, T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::MovieHeader)?.clone();
+    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<'a, T>) -> Result<Self, Error> {
+        let header = parser.next_header()?.clone();
+        println!("{header:?}");
         Ok(header)
     }
 }
