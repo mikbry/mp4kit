@@ -9,7 +9,7 @@ pub struct MvhdBox {
 
 impl MvhdBox {
     pub fn read<'a, T: Read + Seek>(parser: &mut BoxParser<T>, header: BoxHeader) -> Result<Self, Error> {
-        parser.seek((header.size - 8).try_into().unwrap())?;
+        header.skip_content(parser)?;
         Ok(Self {
             header
         })
@@ -19,9 +19,6 @@ impl MvhdBox {
 impl BoxReader for MvhdBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
         let header = parser.next_header_with_type(BoxType::MovieHeader)?.clone();
-        parser.seek((header.size - 8).try_into().unwrap())?;
-        Ok(Self {
-            header
-        })
+        MvhdBox::read(parser, header)
     }
 }

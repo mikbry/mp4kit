@@ -1,7 +1,11 @@
+
 #[macro_export]
 macro_rules! box_definitions {
     ($($(#[$attr:meta])* $boxenum:ident $boxtype:expr),*,) => {
-        #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+        use std::fmt;
+        use $crate::FourCC;
+    
+        #[derive(Clone, Copy, PartialEq, Eq)]
         pub enum BoxType {
             $($(#[$attr])* $boxenum),*,
             Unknown(u32),
@@ -27,5 +31,11 @@ macro_rules! box_definitions {
             }
         }
 
+        impl fmt::Debug for BoxType {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                let fourcc: FourCC = From::from(*self);
+                fourcc.fmt(f)
+            }
+        }
     }
 }

@@ -13,13 +13,21 @@ pub use mvhd::MvhdBox as MvhdBox;
 #[derive(Clone, Copy, Debug)]
 pub struct BoxHeader {
     pub r#type: BoxType,
+    pub start: u64,
     pub size: u64,
 }
 
+impl BoxHeader {
+    pub fn skip_content<'a, T: Read + Seek>(&self, parser: &mut BoxParser<'a, T>) -> Result<(), Error> {
+        let content_size = self.size - 8;
+        parser.skip(content_size)?;
+        Ok(())
+    }
+}
 impl BoxReader for BoxHeader {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<'a, T>) -> Result<Self, Error> {
         let header = parser.next_header()?.clone();
-        println!("{header:?}");
+        // println!("{header:?}");
         Ok(header)
     }
 }

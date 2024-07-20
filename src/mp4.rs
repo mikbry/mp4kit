@@ -11,8 +11,10 @@ pub struct Mp4 {
 enum ChildBox {
     Ftyp(FtypBox),
     Moov(MoovBox),
+    Unknown(BoxHeader),
     None(),
 }
+
 impl Mp4 {
     fn read_children_box<'a, T: Read + Seek>(parser: &mut BoxParser<'a, T>) -> Result<ChildBox, Error> {
         let header = match BoxHeader::parse(parser) {
@@ -27,17 +29,19 @@ impl Mp4 {
         let result = match header.r#type {
             BoxType::FileType => {
                 let ftyp_box = FtypBox::read(parser, header)?;
-                println!("ftyp box: {:?}", ftyp_box);
+                println!("Mp4: {:?}", ftyp_box);
                 ChildBox::Ftyp(ftyp_box)
                 // 
             },
             BoxType::Movie => {
                 let moov_box = MoovBox::read(parser, header)?;
-                println!("moov box: {:?}", moov_box);
+                println!("Mp4: {:?}", moov_box);
                 ChildBox::Moov(moov_box)
             },
             _ => {
-                return Err(Error::InvalidBox(format!("Mp4: Invalid child box {:#x}", u32::from(header.r#type)))); // header.r#type.to_string()));
+                // return Err(Error::InvalidBox(format!("Mp4: Invalid child box {:?}", header))); // header.r#type.to_string()));
+                println!("Mp4: unknown {:?}", header);
+                ChildBox::Unknown(header)
             },
         };
         Ok(result)
@@ -54,6 +58,10 @@ impl Mp4 {
             match mp4box {
                 ChildBox::Ftyp(b) => ftyp = Some(b),
                 ChildBox::Moov(b) => moov = Some(b),
+                ChildBox::Unknown(unknown_box) => {
+                    // println!("Mp4: unknown box: {unknown_box:?}");
+                    unknown_box.skip_content(&mut parser)?;
+                },
                 ChildBox::None() => {
                     break;
                 },

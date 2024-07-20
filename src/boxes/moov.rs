@@ -11,6 +11,7 @@ pub struct MoovBox {
 
 enum ChildBox {
     Mvhd(MvhdBox),
+    Unknown(BoxHeader),
     None(),
 }
 
@@ -26,14 +27,12 @@ impl MoovBox {
             },
         };
         let result = match header.r#type {
-            BoxType::FileType => {
+            BoxType::MovieHeader => {
                 let mvhd_box = MvhdBox::read(parser, header)?;
-                println!("Mvhd box: {:?}", mvhd_box);
                 ChildBox::Mvhd(mvhd_box)
-                // 
             },
             _ => {
-                return Err(Error::InvalidBox(format!("Moov: Invalid child box {:#x}", u32::from(header.r#type))));
+                ChildBox::Unknown(header)
             },
         };
         Ok(result)
@@ -42,15 +41,29 @@ impl MoovBox {
     pub fn read<'a, T: Read + Seek>(parser: &mut BoxParser<T>, header: BoxHeader) -> Result<Self, Error> {
         parser.clean();
         let mut mvhd: Option<MvhdBox> = None;
+        let mut content_parsed_size: u64  = 0;
         loop  {
+            println!("content_size {content_parsed_size:} {:?}", header.size - 8);
+            if content_parsed_size >= header.size - 8 {
+                break;
+            }
             let mp4box = match MoovBox::read_children_box(parser) {
                 Ok(mp4box) => mp4box,
                 Err(error) => return Err(error),
             };
             match mp4box {
-                ChildBox::Mvhd(b) => mvhd = Some(b),
+                ChildBox::Mvhd(b) => {
+                    content_parsed_size += b.header.size;
+                    println!("Moov: {b:?}");
+                    mvhd = Some(b);
+                },
                 ChildBox::None() => {
                     break;
+                },
+                ChildBox::Unknown(unknown_box) => {
+                    content_parsed_size += unknown_box.size;
+                    println!("Moov: unknown {unknown_box:?}");
+                    unknown_box.skip_content(parser)?;
                 },
             }
         };
