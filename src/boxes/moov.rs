@@ -43,7 +43,7 @@ impl MoovBox {
         let mut mvhd: Option<MvhdBox> = None;
         let mut content_parsed_size: u64  = 0;
         loop  {
-            println!("content_size {content_parsed_size:} {:?}", header.size - 8);
+            // println!("content_size {content_parsed_size:} {:?}", header.size - 8);
             if content_parsed_size >= header.size - 8 {
                 break;
             }
