@@ -60,7 +60,7 @@ impl Mp4 {
                 ChildBox::Moov(b) => moov = Some(b),
                 ChildBox::Unknown(unknown_box) => {
                     // println!("Mp4: unknown box: {unknown_box:?}");
-                    unknown_box.skip_content(&mut parser)?;
+                    unknown_box.skip_content(&mut parser, 0)?;
                 },
                 ChildBox::None() => {
                     break;

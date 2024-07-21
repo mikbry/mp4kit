@@ -63,7 +63,7 @@ impl MoovBox {
                 ChildBox::Unknown(unknown_box) => {
                     content_parsed_size += unknown_box.size;
                     println!("Moov: unknown {unknown_box:?}");
-                    unknown_box.skip_content(parser)?;
+                    unknown_box.skip_content(parser, 0)?;
                 },
             }
         };
