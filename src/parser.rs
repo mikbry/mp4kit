@@ -41,12 +41,38 @@ impl<'a, T: Read + Seek> BoxParser<'a, T> {
         Ok(())
     }
 
+    pub fn read_u8(&mut self) -> Result<u8, Error> {
+        let mut buf: [u8; 1] = [0; 1];
+        if let Err(error) = self.reader.read_exact(&mut buf) {
+            return Err(self.set_error(error));
+        }
+        Ok(buf[0])
+    }
+
+    pub fn read_u16(&mut self) -> Result<u16, Error> {
+        let mut buf: [u8; 2] = [0; 2];
+        if let Err(error) = self.reader.read_exact(&mut buf) {
+            return Err(self.set_error(error));
+        }
+        let value: u16 = u16::from_be_bytes(buf);
+        Ok(value)
+    }
+
     pub fn read_u32(&mut self) -> Result<u32, Error> {
         let mut buf: [u8; 4] = [0; 4];
         if let Err(error) = self.reader.read_exact(&mut buf) {
             return Err(self.set_error(error));
         }
         let value: u32 = u32::from_be_bytes(buf);
+        Ok(value)
+    }
+
+    pub fn read_i32(&mut self) -> Result<i32, Error> {
+        let mut buf: [u8; 4] = [0; 4];
+        if let Err(error) = self.reader.read_exact(&mut buf) {
+            return Err(self.set_error(error));
+        }
+        let value: i32 = i32::from_be_bytes(buf);
         Ok(value)
     }
 
@@ -77,6 +103,19 @@ impl<'a, T: Read + Seek> BoxParser<'a, T> {
             }
         };
         Ok(value)
+    }
+
+
+    pub fn read_header_extra(&mut self) -> Result<(u8, u32), Error> {
+        let version = self.read_u8()?;
+        let mut buf: [u8; 3] = [0; 3];
+        if let Err(error) = self.reader.read_exact(&mut buf) {
+            return Err(self.set_error(error));
+        }
+        Ok((
+            version,
+            u32::from(buf[0]) << 16 | u32::from(buf[1]) << 8 | u32::from(buf[2]),
+        ))
     }
 
     pub fn show_error(&self) -> String {

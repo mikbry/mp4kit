@@ -18,8 +18,8 @@ pub struct BoxHeader {
 }
 
 impl BoxHeader {
-    pub fn skip_content<'a, T: Read + Seek>(&self, parser: &mut BoxParser<'a, T>) -> Result<(), Error> {
-        let content_size = self.size - 8;
+    pub fn skip_content<'a, T: Read + Seek>(&self, parser: &mut BoxParser<'a, T>, offset: u64) -> Result<(), Error> {
+        let content_size = self.size - 8 - offset;
         parser.skip(content_size)?;
         Ok(())
     }
