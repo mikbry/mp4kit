@@ -7,6 +7,8 @@ pub mod mdat;
 pub mod udta;
 pub mod wide;
 pub mod tkhd;
+pub mod edts;
+pub mod elst;
 
 use std::io::{Read, Seek};
 
@@ -19,7 +21,11 @@ use tkhd::TrackHeaderBox;
 pub use trak::TrackBox as TrackBox;
 pub use mdat::MediaDataBox as MediaDataBox;
 pub use udta::UserDataBox as UserDataBox;
-use wide::WideBox;
+pub use wide::WideBox as WideBox;
+pub use edts::EditBox as EditBox;
+pub use elst::EditListBox as EditListBox;
+
+pub const HEADER_LENGTH: u64 = 8;
 
 #[derive(Clone, Copy, Debug)]
 pub struct BoxHeader {
@@ -30,7 +36,7 @@ pub struct BoxHeader {
 
 impl BoxHeader {
     pub fn skip_content<'a, T: Read + Seek>(&self, reader: &mut BoxReader<'a, T>, offset: u64) -> Result<(), Error> {
-        let content_size = self.size - 8 - offset;
+        let content_size = self.size - HEADER_LENGTH - offset;
         reader.skip(content_size)?;
         Ok(())
     }
@@ -86,6 +92,8 @@ pub enum ChildBox {
     Udta(UserDataBox),
     Wide(WideBox),
     Tkhd(TrackHeaderBox),
+    Edts(EditBox),
+    // Elst(EditListBox), // Elst is only present in Edts
     Unknown(BoxHeader),
 }
 
@@ -130,6 +138,10 @@ impl BoxContainer {
                 let trackheader_box = TrackHeaderBox::read(reader, header)?;
                 ChildBox::Tkhd(trackheader_box)
             },
+            BoxType::Edit => {
+                let edit_box = EditBox::read(reader, header)?;
+                ChildBox::Edts(edit_box)
+            },
             _ => {
                 ChildBox::Unknown(header)
             },
@@ -143,7 +155,7 @@ impl Reader for BoxContainer {
         let mut children: Vec<ChildBox> = Vec::new();
         let mut content_parsed_size: u64  = 0;
         loop  {
-            if header.size > 0 && content_parsed_size >= header.size - 8 {
+            if header.size > 0 && content_parsed_size >= header.size - HEADER_LENGTH {
                 break;
             }
             let child_header = match BoxHeader::read(reader) {
@@ -188,4 +200,6 @@ box_definitions!(
     UserData    0x75647461u32,  // "udta"
     Wide        0x77696465u32,  // "wide" 
     TrackHeader 0x746b6864u32,  // "tkhd"
+    Edit        0x65647473u32,  // "edts"
+    EditList    0x656c7374u32,  // "elst"
 );

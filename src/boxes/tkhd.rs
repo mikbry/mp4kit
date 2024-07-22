@@ -46,7 +46,7 @@ impl Reader for TrackHeaderBox {
                     reader.read_u64()?,
                 )
             }
-            _ => return Err(Error::InvalidData(format!("Mvhd: unknown version {:?}", version))),
+            _ => return Err(Error::InvalidData(format!("Tkhd: unknown version {:?}", version))),
         };
         reader.skip(8)?; // Reserved
 

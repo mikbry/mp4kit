@@ -85,6 +85,15 @@ impl<'a, T: Read + Seek> BoxReader<'a, T> {
         Ok(value)
     }
 
+    pub fn read_i64(&mut self) -> Result<i64, Error> {
+        let mut buf: [u8; 8] = [0; 8];
+        if let Err(error) = self.src.read_exact(&mut buf) {
+            return Err(self.set_error(error));
+        }
+        let value = i64::from_be_bytes(buf);
+        Ok(value)
+    }
+
     pub fn read_string(&mut self, len: usize) -> Result<String, Error> {
         let mut buf = Vec::with_capacity(len);
         if let Err(error) = self.src.take(len.try_into().unwrap()).read_to_end(&mut buf) {
