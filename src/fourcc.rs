@@ -57,6 +57,5 @@ impl fmt::Display for FourCC {
 macro_rules! fourcc {
     ($str:expr) => {
         format!("{:#x}u32", $crate::FourCC::from_str($str))
-        // $crate::FourCC::from_str($str)
     }
 }
