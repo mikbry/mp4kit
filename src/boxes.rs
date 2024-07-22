@@ -6,14 +6,16 @@ pub mod trak;
 pub mod mdat;
 pub mod udta;
 pub mod wide;
+pub mod tkhd;
 
 use std::io::{Read, Seek};
 
-use crate::{box_definitions, BoxParser, BoxReader, Error};
+use crate::{box_definitions, BoxParser, BoxReader, Error, Parser, Reader};
 
 pub use ftyp::FtypBox as FtypBox;
 pub use moov::MoovBox as MoovBox;
 pub use mvhd::MvhdBox as MvhdBox;
+use tkhd::TrackHeaderBox;
 pub use trak::TrackBox as TrackBox;
 pub use mdat::MediaDataBox as MediaDataBox;
 pub use udta::UserDataBox as UserDataBox;
@@ -27,9 +29,9 @@ pub struct BoxHeader {
 }
 
 impl BoxHeader {
-    pub fn skip_content<'a, T: Read + Seek>(&self, parser: &mut BoxParser<'a, T>, offset: u64) -> Result<(), Error> {
+    pub fn skip_content<'a, T: Read + Seek>(&self, reader: &mut BoxReader<'a, T>, offset: u64) -> Result<(), Error> {
         let content_size = self.size - 8 - offset;
-        parser.skip(content_size)?;
+        reader.skip(content_size)?;
         Ok(())
     }
 
@@ -40,11 +42,35 @@ impl BoxHeader {
             size: 0,
         }
     }
+
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<'a, T>) -> Result<Self, Error> {
+        let start = reader.stream_position()
+            .map_err(|error| Error::InvalidData(error.to_string()))?;
+        let mut size: u64 = reader.read_u32()? as u64;
+        let four_cc = reader.read_u32()?;
+
+        if size == 1 {
+            let large_size = reader.read_u64()?;
+            size = match large_size {
+                0 => 0,
+                1..=15 => {
+                    return Err(Error::InvalidData("Invalid Box size".to_owned()));
+                }
+                _ => large_size - 8, // Remove large_size offset = 8
+            };
+        }
+
+        Ok(BoxHeader {
+            r#type: BoxType::from(four_cc),
+            size,
+            start,
+        })
+    }
 }
 
-impl BoxReader for BoxHeader {
+impl Parser for BoxHeader {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<'a, T>) -> Result<Self, Error> {
-        let header = parser.next_header()?.clone();
+        let header = BoxHeader::read(parser.get_reader())?;
         // println!("{header:?}");
         Ok(header)
     }
@@ -59,6 +85,7 @@ pub enum ChildBox {
     Mdat(MediaDataBox),
     Udta(UserDataBox),
     Wide(WideBox),
+    Tkhd(TrackHeaderBox),
     Unknown(BoxHeader),
 }
 
@@ -69,35 +96,39 @@ pub struct BoxContainer {
 }
 
 impl BoxContainer {
-    fn read_box<'a, T: Read + Seek>(parser: &mut BoxParser<'a, T>, header: BoxHeader) -> Result<ChildBox, Error> {
+    fn read_box<'a, T: Read + Seek>(reader: &mut BoxReader<'a, T>, header: BoxHeader) -> Result<ChildBox, Error> {
         let result = match header.r#type {
             BoxType::FileType => {
-                let ftyp_box = FtypBox::read(parser, header)?;
+                let ftyp_box = FtypBox::read(reader, header)?;
                 ChildBox::Ftyp(ftyp_box)
             },
             BoxType::Movie => {
-                let moov_box = MoovBox::read(parser, header)?;
+                let moov_box = MoovBox::read(reader, header)?;
                 ChildBox::Moov(moov_box)
             },
             BoxType::MovieHeader => {
-                let mvhd_box = MvhdBox::read(parser, header)?;
+                let mvhd_box = MvhdBox::read(reader, header)?;
                 ChildBox::Mvhd(mvhd_box)
             },
             BoxType::Track => {
-                let track_box = TrackBox::read(parser, header)?;
+                let track_box = TrackBox::read(reader, header)?;
                 ChildBox::Trak(track_box)
             },
             BoxType::MediaData => {
-                let mediadata_box = MediaDataBox::read(parser, header)?;
+                let mediadata_box = MediaDataBox::read(reader, header)?;
                 ChildBox::Mdat(mediadata_box)
             },
             BoxType::UserData => {
-                let userdata_box = UserDataBox::read(parser, header)?;
+                let userdata_box = UserDataBox::read(reader, header)?;
                 ChildBox::Udta(userdata_box)
             },
             BoxType::Wide => {
-                let wide_box = WideBox::read(parser, header)?;
+                let wide_box = WideBox::read(reader, header)?;
                 ChildBox::Wide(wide_box)
+            },
+            BoxType::TrackHeader => {
+                let trackheader_box = TrackHeaderBox::read(reader, header)?;
+                ChildBox::Tkhd(trackheader_box)
             },
             _ => {
                 ChildBox::Unknown(header)
@@ -105,16 +136,17 @@ impl BoxContainer {
         };
         Ok(result)
     }
+}
 
-    pub fn read<'a, T: Read + Seek>(parser: &mut BoxParser<T>, header: BoxHeader) -> Result<Self, Error> {
-        parser.clean();
+impl Reader for BoxContainer {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
         let mut children: Vec<ChildBox> = Vec::new();
         let mut content_parsed_size: u64  = 0;
         loop  {
             if header.size > 0 && content_parsed_size >= header.size - 8 {
                 break;
             }
-            let child_header = match BoxHeader::parse(parser) {
+            let child_header = match BoxHeader::read(reader) {
                 Ok(header) => header,
                 Err(error) => {
                     if error == Error::EOF() {
@@ -123,11 +155,11 @@ impl BoxContainer {
                     return Err(error);
                 },
             };
-            let child = BoxContainer::read_box(parser, child_header)?;
+            let child = BoxContainer::read_box(reader, child_header)?;
             println!("{:?}: {:?}", header.r#type, child);
             
             if let ChildBox::Unknown(unknown_box) = child {
-                unknown_box.skip_content(parser, 0)?;
+                unknown_box.skip_content(reader, 0)?;
             }
 
             children.push(child);
@@ -139,10 +171,11 @@ impl BoxContainer {
         })
     }
 }
-impl BoxReader  for BoxContainer {
+
+impl Parser  for BoxContainer {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
         let header = parser.next_header_with_type(BoxType::Movie)?;
-        BoxContainer::read(parser, header)
+        BoxContainer::read(parser.get_reader(), header)
     }
 }
 
@@ -154,4 +187,5 @@ box_definitions!(
     MediaData   0x6d646174u32,  // "mdat"
     UserData    0x75647461u32,  // "udta"
     Wide        0x77696465u32,  // "wide" 
+    TrackHeader 0x746b6864u32,  // "tkhd"
 );
