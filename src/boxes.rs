@@ -3,6 +3,8 @@ pub mod ftyp;
 pub mod moov;
 pub mod mvhd;
 pub mod trak;
+pub mod mdat;
+pub mod udta;
 
 use std::io::{Read, Seek};
 
@@ -12,6 +14,8 @@ pub use ftyp::FtypBox as FtypBox;
 pub use moov::MoovBox as MoovBox;
 pub use mvhd::MvhdBox as MvhdBox;
 pub use trak::TrackBox as TrackBox;
+pub use mdat::MediaDataBox as MediaDataBox;
+pub use udta::UserDataBox as UserDataBox;
 
 #[derive(Clone, Copy, Debug)]
 pub struct BoxHeader {
@@ -27,9 +31,9 @@ impl BoxHeader {
         Ok(())
     }
 
-    pub fn root() -> Self {
+    pub fn root(name: &str) -> Self {
         Self {
-            r#type: BoxType::Root(),
+            r#type: BoxType::Root(FourCC::from_str(name)),
             start: 0,
             size: 0,
         }
@@ -50,6 +54,8 @@ pub enum ChildBox {
     Moov(MoovBox),
     Mvhd(MvhdBox),
     Trak(TrackBox),
+    Mdat(MediaDataBox),
+    Udta(UserDataBox),
     Unknown(BoxHeader),
 }
 
@@ -77,6 +83,14 @@ impl BoxContainer {
             BoxType::Track => {
                 let track_box = TrackBox::read(parser, header)?;
                 ChildBox::Trak(track_box)
+            },
+            BoxType::MediaData => {
+                let mediadata_box = MediaDataBox::read(parser, header)?;
+                ChildBox::Mdat(mediadata_box)
+            },
+            BoxType::UserData => {
+                let userdata_box = UserDataBox::read(parser, header)?;
+                ChildBox::Udta(userdata_box)
             },
             _ => {
                 ChildBox::Unknown(header)
@@ -130,4 +144,6 @@ box_definitions!(
     Movie       0x6d6f6f76u32,  // "moov"
     MovieHeader 0x6d766864u32,  // "mvhd"
     Track       0x7472616bu32,  // "trak"
+    MediaData   0x6d646174u32,  // "mdat"
+    UserData    0x75647461u32,  // "udta"
 );
