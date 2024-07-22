@@ -99,6 +99,9 @@ impl<'a, T: Read + Seek> BoxReader<'a, T> {
         if let Err(error) = self.src.take(len.try_into().unwrap()).read_to_end(&mut buf) {
             return Err(self.set_error(error));
         }
+        if let Some(end) = buf.iter().position(|&b| b == b'\0') {
+            buf.truncate(end);
+        }
         let value = match String::from_utf8(buf) {
             Ok(v) => v,
             Err(error) => {
