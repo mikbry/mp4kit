@@ -9,6 +9,7 @@ pub mod wide;
 pub mod tkhd;
 pub mod edts;
 pub mod elst;
+pub mod mdia;
 
 use std::io::{Read, Seek};
 
@@ -24,6 +25,7 @@ pub use udta::UserDataBox as UserDataBox;
 pub use wide::WideBox as WideBox;
 pub use edts::EditBox as EditBox;
 pub use elst::EditListBox as EditListBox;
+pub use mdia::MediaBox as MediaBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -94,6 +96,7 @@ pub enum ChildBox {
     Tkhd(TrackHeaderBox),
     Edts(EditBox),
     // Elst(EditListBox), // Elst is only present in Edts
+    Mdia(MediaBox),
     Unknown(BoxHeader),
 }
 
@@ -141,6 +144,10 @@ impl BoxContainer {
             BoxType::Edit => {
                 let edit_box = EditBox::read(reader, header)?;
                 ChildBox::Edts(edit_box)
+            },
+            BoxType::Media => {
+                let media_box = MediaBox::read(reader, header)?;
+                ChildBox::Mdia(media_box)
             },
             _ => {
                 ChildBox::Unknown(header)
@@ -202,4 +209,5 @@ box_definitions!(
     TrackHeader 0x746b6864u32,  // "tkhd"
     Edit        0x65647473u32,  // "edts"
     EditList    0x656c7374u32,  // "elst"
+    Media       0x6d646961u32,  // "mdia"
 );
