@@ -1,6 +1,9 @@
-use std::{fmt, io::{Read, Seek}};
+use std::{
+    fmt,
+    io::{Read, Seek},
+};
 
-use crate::{BoxParser, Error};
+use crate::{BoxHeader, BoxReader, Error, Reader};
 
 #[derive(Clone, Copy)]
 pub struct Matrix {
@@ -15,30 +18,32 @@ pub struct Matrix {
     pub w: i32, // 2.30 fix point
 }
 
-impl Matrix {
-    pub fn read<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
+impl Reader for Matrix {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, _: BoxHeader) -> Result<Self, Error> {
         Ok(Self {
-            a: parser.read_i32()?,
-            b: parser.read_i32()?,
-            u: parser.read_i32()?,
-            c: parser.read_i32()?,
-            d: parser.read_i32()?,
-            v: parser.read_i32()?,
-            x: parser.read_i32()?,
-            y: parser.read_i32()?,
-            w: parser.read_i32()?,
-
+            a: reader.read_i32()?,
+            b: reader.read_i32()?,
+            u: reader.read_i32()?,
+            c: reader.read_i32()?,
+            d: reader.read_i32()?,
+            v: reader.read_i32()?,
+            x: reader.read_i32()?,
+            y: reader.read_i32()?,
+            w: reader.read_i32()?,
         })
     }
-
-    fn  write_matrix(&self, f: &mut fmt::Formatter) -> fmt::Result {
+}
+    
+impl Matrix {
+    fn write_matrix(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "{{ {:}, {:}, {:}, {:}, {:}, {:}, {:}, {:}, {:} }}",
             self.a, self.b, self.u, self.c, self.d, self.v, self.x, self.y, self.w
         )
+    }
 }
-}
+
 impl Default for Matrix {
     fn default() -> Self {
         Self {
@@ -56,8 +61,6 @@ impl Default for Matrix {
     }
 }
 
-
-
 impl fmt::Debug for Matrix {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.write_matrix(f)
@@ -69,4 +72,3 @@ impl fmt::Display for Matrix {
         self.write_matrix(f)
     }
 }
-

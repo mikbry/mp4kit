@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxContainer, BoxHeader, BoxParser, ChildBox, Error, FtypBox, MediaDataBox, MoovBox};
+use crate::{BoxContainer, BoxHeader, BoxParser, ChildBox, Error, FtypBox, MediaDataBox, MoovBox, Reader};
 
 #[derive(Clone, Debug)]
 pub struct Mp4 {
@@ -15,7 +15,7 @@ impl Mp4 {
         let mut moov: Option<MoovBox> = None;
         let mut mdat: Option<MediaDataBox> = None;
         let header = BoxHeader::root("Mp4 ");
-        let content = BoxContainer::read(&mut parser, header)?;
+        let content = BoxContainer::read(parser.get_reader(), header)?;
         let mut is_wide = false;
         for child in content.children {
             match child {
@@ -23,14 +23,14 @@ impl Mp4 {
                 ChildBox::Moov(b) => moov = Some(b),
                 ChildBox::Wide(_) => {
                     is_wide = true;
-                    println!("Mp4: TODO handle wide {:}", is_wide);
                 }
                 ChildBox::Mdat(b) => mdat = Some(b),
                 _ => (),
             }
-            is_wide = false;
+            // is_wide = false;
         }
-
+        println!("Mp4: TODO handle wide {:}", is_wide);
+    
         if ftyp.is_none() {
             return Err(Error::BoxNotFound("Mp4: Ftyp box is mandatory".to_owned()));
         }

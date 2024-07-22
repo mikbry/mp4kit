@@ -2,9 +2,9 @@ use std::io::{Read, Seek};
 
 use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Matrix, Parser, Reader};
 
-// https://developer.apple.com/documentation/quicktime-file-format/movie_header_atom
+// https://developer.apple.com/documentation/quicktime-file-format/track_header_atom
 #[derive(Clone, Debug)]
-pub struct MvhdBox {
+pub struct TrackHeaderBox {
     pub header: BoxHeader,
 
     pub version: u8,
@@ -12,33 +12,26 @@ pub struct MvhdBox {
 
     pub creation_time: u64,
     pub modification_time: u64,
-    pub timescale: u32,
+    pub track_id: u32,
     pub duration: u64,
-
-    pub rate: u32,
+    pub layer: u16,
+    pub alternate_group: u16,
     pub volume: u16,
-
     pub matrix: Matrix,
-
-    pub preview_time: u32,
-    pub preview_duration: u32,
-    pub poster_time: u32,
-    pub selection_time: u32,
-    pub selection_duration: u32,
-    pub current_time: u32,
-
-    pub next_track_id: u32,
+    pub width: u32,
+    pub height: u32,
 }
 
-impl Reader for MvhdBox {
+impl Reader for TrackHeaderBox {
     fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
         let (version, flags) = reader.read_header_extra()?;
-        let (creation_time, modification_time, timescale, duration) = match version {
+        let (creation_time, modification_time, track_id, _, duration) = match version {
             // 32 bit creation, modification times and duration
             0 => {
                 (
                     reader.read_u32()? as u64,
                     reader.read_u32()? as u64,
+                    reader.read_u32()?,
                     reader.read_u32()?,
                     reader.read_u32()? as u64,
                 )
@@ -49,56 +42,46 @@ impl Reader for MvhdBox {
                     reader.read_u64()?,
                     reader.read_u64()?,
                     reader.read_u32()?,
+                    reader.read_u32()?,
                     reader.read_u64()?,
                 )
             }
             _ => return Err(Error::InvalidData(format!("Mvhd: unknown version {:?}", version))),
         };
-        let rate = reader.read_u32()?;
+        reader.skip(8)?; // Reserved
+
+        let layer = reader.read_u16()?;
+        let alternate_group = reader.read_u16()?;
         let volume = reader.read_u16()?;
-        
-        reader.skip(10)?; // Reserved
+    
+        reader.skip(2)?; // Reserved
 
         let matrix = Matrix::read(reader, header)?;
 
-        let preview_time = reader.read_u32()?;
-        let preview_duration = reader.read_u32()?;
-        let poster_time = reader.read_u32()?;
-        let selection_time = reader.read_u32()?;
-        let selection_duration = reader.read_u32()?;
-        let current_time = reader.read_u32()?;
+        let width = reader.read_u32()?;
+        let height = reader.read_u32()?;
 
-        let next_track_id = reader.read_u32()?;
-    
         Ok(Self {
             header,
             version,
             flags,
             creation_time,
             modification_time,
-            timescale,
+            track_id,
             duration,
-
-            rate,
+            layer,
+            alternate_group,
             volume,
-
             matrix,
-
-            preview_time,
-            preview_duration,
-            poster_time,
-            selection_time,
-            selection_duration,
-            current_time,
-
-            next_track_id,
+            width,
+            height,
         })
     }
 }
 
-impl Parser for MvhdBox {
+impl Parser for TrackHeaderBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::MovieHeader)?.clone();
-        MvhdBox::read(parser.get_reader(), header)
+        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        TrackHeaderBox::read(parser.get_reader(), header)
     }
 }
