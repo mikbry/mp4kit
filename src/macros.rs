@@ -8,6 +8,7 @@ macro_rules! box_definitions {
         #[derive(Clone, Copy, PartialEq, Eq)]
         pub enum BoxType {
             $($(#[$attr])* $boxenum),*,
+            Root(),
             Unknown(u32),
         }
 
@@ -27,6 +28,7 @@ macro_rules! box_definitions {
                 match b {
                     $($(#[$attr])* $boxenum => $boxtype),*,
                     Unknown(t) => t,
+                    Root() => 0,
                 }
             }
         }
