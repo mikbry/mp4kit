@@ -9,8 +9,6 @@ pub struct Mp4 {
     pub mdat: MediaDataBox,
 }
 
-
-
 impl Mp4 {
     pub fn parse<'a, T: Read + Seek>(mut parser: BoxParser<T>) -> Result<Self, Error> {
         let mut ftyp: Option<FtypBox> = None;
@@ -18,13 +16,19 @@ impl Mp4 {
         let mut mdat: Option<MediaDataBox> = None;
         let header = BoxHeader::root("Mp4 ");
         let content = BoxContainer::read(&mut parser, header)?;
+        let mut is_wide = false;
         for child in content.children {
             match child {
                 ChildBox::Ftyp(b) => ftyp = Some(b),
                 ChildBox::Moov(b) => moov = Some(b),
+                ChildBox::Wide(_) => {
+                    is_wide = true;
+                    println!("Mp4: TODO handle wide {:}", is_wide);
+                }
                 ChildBox::Mdat(b) => mdat = Some(b),
                 _ => (),
             }
+            is_wide = false;
         }
 
         if ftyp.is_none() {
@@ -36,7 +40,7 @@ impl Mp4 {
         if mdat.is_none() {
             return Err(Error::BoxNotFound("Mp4: Mdat box is mandatory".to_owned()));
         }
-    
+
         Ok(Self {
             ftyp: ftyp.unwrap(),
             moov: moov.unwrap(),

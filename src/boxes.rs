@@ -5,6 +5,7 @@ pub mod mvhd;
 pub mod trak;
 pub mod mdat;
 pub mod udta;
+pub mod wide;
 
 use std::io::{Read, Seek};
 
@@ -16,6 +17,7 @@ pub use mvhd::MvhdBox as MvhdBox;
 pub use trak::TrackBox as TrackBox;
 pub use mdat::MediaDataBox as MediaDataBox;
 pub use udta::UserDataBox as UserDataBox;
+use wide::WideBox;
 
 #[derive(Clone, Copy, Debug)]
 pub struct BoxHeader {
@@ -56,6 +58,7 @@ pub enum ChildBox {
     Trak(TrackBox),
     Mdat(MediaDataBox),
     Udta(UserDataBox),
+    Wide(WideBox),
     Unknown(BoxHeader),
 }
 
@@ -91,6 +94,10 @@ impl BoxContainer {
             BoxType::UserData => {
                 let userdata_box = UserDataBox::read(parser, header)?;
                 ChildBox::Udta(userdata_box)
+            },
+            BoxType::Wide => {
+                let wide_box = WideBox::read(parser, header)?;
+                ChildBox::Wide(wide_box)
             },
             _ => {
                 ChildBox::Unknown(header)
@@ -146,4 +153,5 @@ box_definitions!(
     Track       0x7472616bu32,  // "trak"
     MediaData   0x6d646174u32,  // "mdat"
     UserData    0x75647461u32,  // "udta"
+    Wide        0x77696465u32,  // "wide" 
 );
