@@ -15,6 +15,8 @@ pub mod hdlr;
 pub mod minf;
 pub mod vmhd;
 pub mod smhd;
+pub mod dinf;
+pub mod dref;
 
 use std::io::{Read, Seek};
 
@@ -36,6 +38,8 @@ pub use hdlr::HandlerBox as HandlerBox;
 pub use minf::MediaInfoBox as MediaInfoBox;
 pub use vmhd::VideoInfoBox as VideoInfoBox;
 pub use smhd::SoundInfoBox as SoundInfoBox;
+pub use dinf::DataInfoBox as DataInfoBox;
+pub use dref::DataReferenceBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -112,6 +116,8 @@ pub enum ChildBox {
     Minf(MediaInfoBox),
     Vmhd(VideoInfoBox),
     Smhd(SoundInfoBox),
+    Dinf(DataInfoBox),
+    // Dref(DataReferenceBox), // Dref isonly present in Dinf
     Unknown(BoxHeader),
 }
 
@@ -184,6 +190,10 @@ impl BoxContainer {
                 let soundinfo_box = SoundInfoBox::read(reader, header)?;
                 ChildBox::Smhd(soundinfo_box)
             },
+            BoxType::DataInfo => {
+                let datainfo_box = DataInfoBox::read(reader, header)?;
+                ChildBox::Dinf(datainfo_box)
+            },
             _ => {
                 ChildBox::Unknown(header)
             },
@@ -250,4 +260,7 @@ box_definitions!(
     MediaInfo   0x6d696e66u32,  // "minf"
     VideoInfo   0x766d6864u32,  // "vmhd"
     SoundInfo   0x736d6864u32,  // "smhd"
+    DataInfo    0x64696e66u32,  // "dinf"
+    DataRef     0x64726566u32,  // "dref"
+    UrlRef      0x75726c20u32, // 0x75726c20u32,  // "url "
 );
