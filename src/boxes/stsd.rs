@@ -2,7 +2,7 @@ use std::io::{Read, Seek};
 
 use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Parser, Reader};
 
-// https://developer.apple.com/documentation/quicktime-file-format/wide_atom
+// https://developer.apple.com/documentation/quicktime-file-format/video_sample_description
 #[derive(Clone, Debug)]
 pub struct VideoSampleDescriptionBox {
     pub header: BoxHeader,
