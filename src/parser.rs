@@ -163,7 +163,7 @@ impl<'a, T: Read + Seek> BoxParser<'a, T> {
 
     pub fn next_header_with_type(&mut self, header_type: BoxType) -> Result<BoxHeader, Error> {
         let header = self.next_header()?;
-        if header.r#type != header_type {
+        if header.name != header_type {
             return Err(Error::InvalidBoxType());
         }
 

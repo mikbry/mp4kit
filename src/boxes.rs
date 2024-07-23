@@ -17,6 +17,7 @@ pub mod vmhd;
 pub mod smhd;
 pub mod dinf;
 pub mod dref;
+pub mod stbl;
 
 use std::io::{Read, Seek};
 
@@ -25,7 +26,7 @@ use crate::{box_definitions, BoxParser, BoxReader, Error, Parser, Reader};
 pub use ftyp::FtypBox as FtypBox;
 pub use moov::MoovBox as MoovBox;
 pub use mvhd::MvhdBox as MvhdBox;
-use tkhd::TrackHeaderBox;
+pub use tkhd::TrackHeaderBox as TrackHeaderBox;
 pub use trak::TrackBox as TrackBox;
 pub use mdat::MediaDataBox as MediaDataBox;
 pub use udta::UserDataBox as UserDataBox;
@@ -41,11 +42,13 @@ pub use smhd::SoundInfoBox as SoundInfoBox;
 pub use dinf::DataInfoBox as DataInfoBox;
 pub use dref::DataReferenceBox;
 
+pub use stbl::SampleTableBox as SampleTableBox;
+
 pub const HEADER_LENGTH: u64 = 8;
 
 #[derive(Clone, Copy, Debug)]
 pub struct BoxHeader {
-    pub r#type: BoxType,
+    pub name: BoxType,
     pub start: u64,
     pub size: u64,
 }
@@ -59,7 +62,7 @@ impl BoxHeader {
 
     pub fn root(name: &str) -> Self {
         Self {
-            r#type: BoxType::Root(FourCC::from_str(name)),
+            name: BoxType::Root(FourCC::from_str(name)),
             start: 0,
             size: 0,
         }
@@ -83,7 +86,7 @@ impl BoxHeader {
         }
 
         Ok(BoxHeader {
-            r#type: BoxType::from(four_cc),
+            name: BoxType::from(four_cc),
             size,
             start,
         })
@@ -118,6 +121,9 @@ pub enum ChildBox {
     Smhd(SoundInfoBox),
     Dinf(DataInfoBox),
     // Dref(DataReferenceBox), // Dref isonly present in Dinf
+
+    Stbl(SampleTableBox),
+
     Unknown(BoxHeader),
 }
 
@@ -129,7 +135,7 @@ pub struct BoxContainer {
 
 impl BoxContainer {
     fn read_box<'a, T: Read + Seek>(reader: &mut BoxReader<'a, T>, header: BoxHeader) -> Result<ChildBox, Error> {
-        let result = match header.r#type {
+        let result = match header.name {
             BoxType::FileType => {
                 let ftyp_box = FtypBox::read(reader, header)?;
                 ChildBox::Ftyp(ftyp_box)
@@ -194,6 +200,10 @@ impl BoxContainer {
                 let datainfo_box = DataInfoBox::read(reader, header)?;
                 ChildBox::Dinf(datainfo_box)
             },
+            BoxType::SampleTable => {
+                let sampletable_box = SampleTableBox::read(reader, header)?;
+                ChildBox::Stbl(sampletable_box)
+            },
             _ => {
                 ChildBox::Unknown(header)
             },
@@ -220,7 +230,7 @@ impl Reader for BoxContainer {
                 },
             };
             let child = BoxContainer::read_box(reader, child_header)?;
-            println!("{:?}: {:?}", header.r#type, child);
+            println!("{:?}: {:?}", header.name, child);
             
             if let ChildBox::Unknown(unknown_box) = child {
                 unknown_box.skip_content(reader, 0)?;
@@ -262,5 +272,7 @@ box_definitions!(
     SoundInfo   0x736d6864u32,  // "smhd"
     DataInfo    0x64696e66u32,  // "dinf"
     DataRef     0x64726566u32,  // "dref"
-    UrlRef      0x75726c20u32, // 0x75726c20u32,  // "url "
+    UrlRef      0x75726c20u32,  // "url "
+
+    SampleTable 0x7374626cu32,  // "stbl"
 );
