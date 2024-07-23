@@ -39,7 +39,7 @@ impl Reader for VideoInfoBox {
 
 impl Parser for VideoInfoBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::VideoInfo)?.clone();
         VideoInfoBox::read(parser.get_reader(), header)
     }
 }

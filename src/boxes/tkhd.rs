@@ -81,7 +81,7 @@ impl Reader for TrackHeaderBox {
 
 impl Parser for TrackHeaderBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::TrackHeader)?.clone();
         TrackHeaderBox::read(parser.get_reader(), header)
     }
 }

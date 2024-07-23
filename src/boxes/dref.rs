@@ -65,7 +65,7 @@ impl Reader for DataReferenceBox {
 
 impl Parser for DataReferenceBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::DataRef)?.clone();
         DataReferenceBox::read(parser.get_reader(), header)
     }
 }

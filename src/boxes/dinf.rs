@@ -31,7 +31,7 @@ impl Reader for DataInfoBox {
 
 impl Parser for DataInfoBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::DataInfo)?.clone();
         DataInfoBox::read(parser.get_reader(), header)
     }
 }

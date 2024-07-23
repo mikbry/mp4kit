@@ -33,7 +33,7 @@ impl Reader for SampleToChunkBox {
 
 impl Parser for SampleToChunkBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::SampleToChunk)?.clone();
         SampleToChunkBox::read(parser.get_reader(), header)
     }
 }

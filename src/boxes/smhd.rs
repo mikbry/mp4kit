@@ -33,7 +33,7 @@ impl Reader for SoundInfoBox {
 
 impl Parser for SoundInfoBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::SoundInfo)?.clone();
         SoundInfoBox::read(parser.get_reader(), header)
     }
 }

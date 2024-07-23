@@ -50,7 +50,7 @@ impl Reader for VideoSampleDescriptionBox {
 
 impl Parser for VideoSampleDescriptionBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::VideoSampleDescription)?.clone();
         VideoSampleDescriptionBox::read(parser.get_reader(), header)
     }
 }

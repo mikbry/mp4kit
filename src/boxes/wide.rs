@@ -20,7 +20,7 @@ impl Reader for WideBox {
 
 impl Parser for WideBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::Wide)?.clone();
         WideBox::read(parser.get_reader(), header)
     }
 }

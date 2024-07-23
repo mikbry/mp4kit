@@ -38,7 +38,7 @@ impl Reader for HandlerBox {
 
 impl Parser for HandlerBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::Handler)?.clone();
         HandlerBox::read(parser.get_reader(), header)
     }
 }
