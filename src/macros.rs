@@ -39,5 +39,12 @@ macro_rules! box_definitions {
                 fourcc.fmt(f)
             }
         }
+
+        impl fmt::Display for BoxType {
+            fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+                let fourcc: FourCC = From::from(*self);
+                fourcc.fmt(f)
+            }
+        }
     }
 }

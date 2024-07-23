@@ -17,7 +17,9 @@ pub mod vmhd;
 pub mod smhd;
 pub mod dinf;
 pub mod dref;
+
 pub mod stbl;
+pub mod stsd;
 
 use std::io::{Read, Seek};
 
@@ -43,6 +45,7 @@ pub use dinf::DataInfoBox as DataInfoBox;
 pub use dref::DataReferenceBox;
 
 pub use stbl::SampleTableBox as SampleTableBox;
+pub use stsd::VideoSampleDescriptionBox as VideoSampleDescriptionBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -123,6 +126,7 @@ pub enum ChildBox {
     // Dref(DataReferenceBox), // Dref isonly present in Dinf
 
     Stbl(SampleTableBox),
+    Stsd(VideoSampleDescriptionBox),
 
     Unknown(BoxHeader),
 }
@@ -204,6 +208,10 @@ impl BoxContainer {
                 let sampletable_box = SampleTableBox::read(reader, header)?;
                 ChildBox::Stbl(sampletable_box)
             },
+            BoxType::VideoSampleDescription => {
+                let videosampledescription_box = VideoSampleDescriptionBox::read(reader, header)?;
+                ChildBox::Stsd(videosampledescription_box)
+            },
             _ => {
                 ChildBox::Unknown(header)
             },
@@ -275,4 +283,5 @@ box_definitions!(
     UrlRef      0x75726c20u32,  // "url "
 
     SampleTable 0x7374626cu32,  // "stbl"
+    VideoSampleDescription 0x73747364, // "stsd"
 );
