@@ -21,6 +21,7 @@ pub mod dref;
 pub mod stbl;
 pub mod stsd;
 pub mod stts;
+pub mod stsc;
 
 use std::io::{Read, Seek};
 
@@ -48,6 +49,7 @@ pub use dref::DataReferenceBox;
 pub use stbl::SampleTableBox as SampleTableBox;
 pub use stsd::VideoSampleDescriptionBox as VideoSampleDescriptionBox;
 pub use stts::TimeToSampleBox as TimeToSampleBox;
+pub use stsc::SampleToChunkBox as SampleToChunkBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -130,7 +132,7 @@ pub enum ChildBox {
     Stbl(SampleTableBox),
     Stsd(VideoSampleDescriptionBox),
     Stts(TimeToSampleBox),
-
+    Stsc(SampleToChunkBox),
     Unknown(BoxHeader),
 }
 
@@ -219,6 +221,10 @@ impl BoxContainer {
                 let timetosample_box = TimeToSampleBox::read(reader, header)?;
                 ChildBox::Stts(timetosample_box)
             },
+            BoxType::SampleToChunk => {
+                let sampletochunk_box = SampleToChunkBox::read(reader, header)?;
+                ChildBox::Stsc(sampletochunk_box)
+            },
             _ => {
                 ChildBox::Unknown(header)
             },
@@ -292,4 +298,5 @@ box_definitions!(
     SampleTable 0x7374626cu32,  // "stbl"
     VideoSampleDescription 0x73747364u32, // "stsd"
     TimeToSample 0x73747473u32, // "stts"
+    SampleToChunk 0x73747363u32,// "stsc"
 );
