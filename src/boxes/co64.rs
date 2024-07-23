@@ -33,7 +33,7 @@ impl Reader for ChunkOffset64Box {
 
 impl Parser for ChunkOffset64Box {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::ChunkOffset)?.clone();
+        let header = parser.next_header_with_type(BoxType::ChunkOffset64)?.clone();
         ChunkOffset64Box::read(parser.get_reader(), header)
     }
 }
