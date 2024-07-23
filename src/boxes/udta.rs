@@ -22,7 +22,7 @@ impl Reader for UserDataBox {
 
 impl Parser for UserDataBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::UserData)?.clone();
         UserDataBox::read(parser.get_reader(), header)
     }
 }

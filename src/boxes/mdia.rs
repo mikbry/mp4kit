@@ -42,7 +42,7 @@ impl Reader for MediaBox {
 
 impl Parser for MediaBox {
     fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Track)?.clone();
+        let header = parser.next_header_with_type(BoxType::Media)?.clone();
         MediaBox::read(parser.get_reader(), header)
     }
 }

@@ -22,6 +22,7 @@ pub mod stbl;
 pub mod stsd;
 pub mod stts;
 pub mod stsc;
+pub mod stsz;
 
 use std::io::{Read, Seek};
 
@@ -50,6 +51,7 @@ pub use stbl::SampleTableBox as SampleTableBox;
 pub use stsd::VideoSampleDescriptionBox as VideoSampleDescriptionBox;
 pub use stts::TimeToSampleBox as TimeToSampleBox;
 pub use stsc::SampleToChunkBox as SampleToChunkBox;
+pub use stsz::SampleSizeBox as SampleSizeBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -133,6 +135,8 @@ pub enum ChildBox {
     Stsd(VideoSampleDescriptionBox),
     Stts(TimeToSampleBox),
     Stsc(SampleToChunkBox),
+    Stsz(SampleSizeBox),
+
     Unknown(BoxHeader),
 }
 
@@ -225,6 +229,10 @@ impl BoxContainer {
                 let sampletochunk_box = SampleToChunkBox::read(reader, header)?;
                 ChildBox::Stsc(sampletochunk_box)
             },
+            BoxType::SampleSize => {
+                let samplesize_box = SampleSizeBox::read(reader, header)?;
+                ChildBox::Stsz(samplesize_box)
+            },
             _ => {
                 ChildBox::Unknown(header)
             },
@@ -299,4 +307,5 @@ box_definitions!(
     VideoSampleDescription 0x73747364u32, // "stsd"
     TimeToSample 0x73747473u32, // "stts"
     SampleToChunk 0x73747363u32,// "stsc"
+    SampleSize  0x7374737Au32,  // "stsz"
 );
