@@ -24,6 +24,7 @@ pub mod stts;
 pub mod stsc;
 pub mod stsz;
 pub mod stss;
+pub mod stco;
 
 use std::io::{Read, Seek};
 
@@ -54,6 +55,7 @@ pub use stts::TimeToSampleBox as TimeToSampleBox;
 pub use stsc::SampleToChunkBox as SampleToChunkBox;
 pub use stsz::SampleSizeBox as SampleSizeBox;
 pub use stss::SyncSampleBox as SyncSampleBox;
+pub use stco::ChunkOffsetBox as ChunkOffsetBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -139,6 +141,7 @@ pub enum ChildBox {
     Stsc(SampleToChunkBox),
     Stsz(SampleSizeBox),
     Stss(SyncSampleBox),
+    Stco(ChunkOffsetBox),
 
     Unknown(BoxHeader),
 }
@@ -240,6 +243,10 @@ impl BoxContainer {
                 let syncsample_box = SyncSampleBox::read(reader, header)?;
                 ChildBox::Stss(syncsample_box)
             },
+            BoxType::ChunkOffset => {
+                let chunkoffset_box = ChunkOffsetBox::read(reader, header)?;
+                ChildBox::Stco(chunkoffset_box)
+            },
             _ => {
                 ChildBox::Unknown(header)
             },
@@ -316,4 +323,5 @@ box_definitions!(
     SampleToChunk 0x73747363u32,// "stsc"
     SampleSize  0x7374737Au32,  // "stsz"
     SyncSample  0x73747373u32,  // "stss"
+    ChunkOffset 0x7374636Fu32,  // "stco"
 );
