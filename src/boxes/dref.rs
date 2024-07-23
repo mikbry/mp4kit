@@ -39,7 +39,7 @@ impl Reader for DataReferenceBox {
                     return Err(error);
                 },
             };
-            match child_header.r#type {
+            match child_header.name {
                 BoxType::UrlRef => {
                     let url_box = UrlBox::read(reader, child_header)?;
                     references.push(Reference::Url(url_box));

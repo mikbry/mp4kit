@@ -15,12 +15,12 @@ impl Reader for EditBox {
         let mut list: Option<EditListBox> = None;
         if header.size > HEADER_LENGTH {
             let list_header = BoxHeader::read(reader)?;
-            match list_header.r#type {
+            match list_header.name {
                 BoxType::EditList => {
                     list = Some(EditListBox::read(reader, list_header)?);
                 }
                 _ => {
-                    return Err(Error::InvalidBox(format!("Edts: invalid child type only elst is valid {:?}", list_header.r#type)));
+                    return Err(Error::InvalidBox(format!("Edts: invalid child type only elst is valid {:?}", list_header.name)));
                 }
             }
         }
