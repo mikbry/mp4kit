@@ -26,6 +26,7 @@ pub mod stsz;
 pub mod stss;
 pub mod stco;
 pub mod co64;
+pub mod ctts;
 
 use std::io::{Read, Seek};
 
@@ -58,6 +59,7 @@ pub use stsz::SampleSizeBox as SampleSizeBox;
 pub use stss::SyncSampleBox as SyncSampleBox;
 pub use stco::ChunkOffsetBox as ChunkOffsetBox;
 pub use co64::ChunkOffset64Box as ChunkOffset64Box;
+pub use ctts::CompositionOffsetBox as CompositionOffsetBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -145,6 +147,7 @@ pub enum ChildBox {
     Stss(SyncSampleBox),
     Stco(ChunkOffsetBox),
     Co64(ChunkOffset64Box),
+    Ctts(CompositionOffsetBox),
 
     Unknown(BoxHeader),
 }
@@ -254,6 +257,10 @@ impl BoxContainer {
                 let chunkoffset_box = ChunkOffset64Box::read(reader, header)?;
                 ChildBox::Co64(chunkoffset_box)
             },
+            BoxType::CompositionOffset => {
+                let compositionoffset_box = CompositionOffsetBox::read(reader, header)?;
+                ChildBox::Ctts(compositionoffset_box)
+            },
             _ => {
                 ChildBox::Unknown(header)
             },
@@ -332,5 +339,5 @@ box_definitions!(
     SyncSample  0x73747373u32,  // "stss"
     ChunkOffset 0x7374636Fu32,  // "stco"
     ChunkOffset64 0x636F3634,   // "co64"
-    // Ctts        0x63747473,     // "ctts"
+    CompositionOffset 0x63747473, // "ctts"
 );
