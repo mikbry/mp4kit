@@ -13,6 +13,7 @@ pub mod mdia;
 pub mod mdhd;
 pub mod hdlr;
 pub mod minf;
+pub mod vmhd;
 
 use std::io::{Read, Seek};
 
@@ -32,6 +33,7 @@ pub use mdia::MediaBox as MediaBox;
 pub use mdhd::MediaHeaderBox as MediaHeaderBox;
 pub use hdlr::HandlerBox as HandlerBox;
 pub use minf::MediaInfoBox as MediaInfoBox;
+pub use vmhd::VideoInfoBox as VideoInfoBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -106,6 +108,7 @@ pub enum ChildBox {
     Mdhd(MediaHeaderBox),
     Hdlr(HandlerBox),
     Minf(MediaInfoBox),
+    Vmhd(VideoInfoBox),
     Unknown(BoxHeader),
 }
 
@@ -169,6 +172,10 @@ impl BoxContainer {
             BoxType::MediaInfo => {
                 let mediainfo_box = MediaInfoBox::read(reader, header)?;
                 ChildBox::Minf(mediainfo_box)
+            },
+            BoxType::VideoInfo => {
+                let videoinfo_box = VideoInfoBox::read(reader, header)?;
+                ChildBox::Vmhd(videoinfo_box)
             },
             _ => {
                 ChildBox::Unknown(header)
@@ -234,4 +241,5 @@ box_definitions!(
     MediaHeader 0x6d646864u32,  // "mdhd"
     Handler     0x68646c72u32,  // "hdlr"
     MediaInfo   0x6d696e66u32,  // "minf"
+    VideoInfo   0x766d6864u32,  // "vmhd"
 );
