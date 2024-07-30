@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxContainer, BoxHeader, BoxParser, BoxReader, BoxType, ChildBox, Error, MvhdBox, Parser, Reader, TrackBox};
+use crate::{BoxContainer, BoxHeader, BoxReader, BoxContent, Error, MvhdBox, Reader, TrackBox};
 
 // https://developer.apple.com/documentation/quicktime-file-format/movie_atom
 #[derive(Clone, Debug)]
@@ -16,8 +16,8 @@ impl Reader for MoovBox {
         let mut tracks: Vec<TrackBox> = Vec::new();
         for child in content.children {
             match child {
-                ChildBox::Mvhd(b) => mvhd = Some(b),
-                ChildBox::Trak(b) => tracks.push(b),
+                BoxContent::Mvhd(b) => mvhd = Some(b),
+                BoxContent::Trak(b) => tracks.push(b),
                 _ => (),
             }
         }
@@ -33,12 +33,5 @@ impl Reader for MoovBox {
             header,
             mvhd: mvhd.unwrap(),
         })
-    }
-}
-
-impl Parser  for MoovBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Movie)?;
-        MoovBox::read(parser.get_reader(), header)
     }
 }

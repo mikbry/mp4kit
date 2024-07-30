@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Matrix, Parser, Reader};
+use crate::{BoxHeader, BoxReader, Error, Matrix, Reader};
 
 // https://developer.apple.com/documentation/quicktime-file-format/movie_header_atom
 #[derive(Clone, Debug)]
@@ -93,12 +93,5 @@ impl Reader for MvhdBox {
 
             next_track_id,
         })
-    }
-}
-
-impl Parser for MvhdBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::MovieHeader)?.clone();
-        MvhdBox::read(parser.get_reader(), header)
     }
 }

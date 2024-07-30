@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxHeader, BoxParser, BoxReader, BoxType, EditListBox, Error, Parser, Reader, HEADER_LENGTH};
+use crate::{BoxHeader, BoxReader, BoxType, EditListBox, Error, Reader, HEADER_LENGTH};
 
 // https://developer.apple.com/documentation/quicktime-file-format/edit_atom
 #[derive(Clone, Debug)]
@@ -28,12 +28,5 @@ impl Reader for EditBox {
             header,
             list,
         })
-    }
-}
-
-impl Parser for EditBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Edit)?.clone();
-        EditBox::read(parser.get_reader(), header)
     }
 }

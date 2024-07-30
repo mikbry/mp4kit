@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Matrix, Parser, Reader};
+use crate::{BoxHeader, BoxReader, Error, Matrix, Reader};
 
 // https://developer.apple.com/documentation/quicktime-file-format/track_header_atom
 #[derive(Clone, Debug)]
@@ -76,12 +76,5 @@ impl Reader for TrackHeaderBox {
             width,
             height,
         })
-    }
-}
-
-impl Parser for TrackHeaderBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::TrackHeader)?.clone();
-        TrackHeaderBox::read(parser.get_reader(), header)
     }
 }

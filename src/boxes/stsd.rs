@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Parser, Reader};
+use crate::{BoxHeader, BoxReader, BoxType, Error, Reader};
 
 // https://developer.apple.com/documentation/quicktime-file-format/video_sample_description
 #[derive(Clone, Debug)]
@@ -45,12 +45,5 @@ impl Reader for VideoSampleDescriptionBox {
             flags,
             codec,
         })
-    }
-}
-
-impl Parser for VideoSampleDescriptionBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::VideoSampleDescription)?.clone();
-        VideoSampleDescriptionBox::read(parser.get_reader(), header)
     }
 }

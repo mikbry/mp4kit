@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Parser, Reader};
+use crate::{BoxHeader, BoxReader, Error, Reader};
 
 // https://developer.apple.com/documentation/quicktime-file-format/video_media_information_header_atom
 #[derive(Clone, Debug)]
@@ -34,12 +34,5 @@ impl Reader for VideoInfoBox {
             graphics_mode,
             op_color,
         })
-    }
-}
-
-impl Parser for VideoInfoBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::VideoInfo)?.clone();
-        VideoInfoBox::read(parser.get_reader(), header)
     }
 }

@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{dref::DataReferenceBox, BoxHeader, BoxParser, BoxReader, BoxType, Error, Parser, Reader};
+use crate::{dref::DataReferenceBox, BoxHeader, BoxReader, BoxType, Error, Reader};
 
 // https://developer.apple.com/documentation/quicktime-file-format/data_information_atom
 #[derive(Clone, Debug)]
@@ -26,12 +26,5 @@ impl Reader for DataInfoBox {
 
             data_reference,
         })
-    }
-}
-
-impl Parser for DataInfoBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::DataInfo)?.clone();
-        DataInfoBox::read(parser.get_reader(), header)
     }
 }

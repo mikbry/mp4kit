@@ -1,12 +1,10 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Parser, Reader, HEADER_LENGTH};
+use crate::{BoxHeader, BoxReader, Error, Reader, HEADER_LENGTH};
 
 // https://developer.apple.com/documentation/quicktime-file-format/handler_reference_atom
 #[derive(Clone, Debug)]
 pub struct HandlerBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -26,19 +24,11 @@ impl Reader for HandlerBox {
         let len = header.size - HEADER_LENGTH - 4 - 4 - 4 - 12; 
         let name = reader.read_string(len as usize)?;
         Ok(Self {
-            header,
             version,
             flags,
             component_type,
             handler,
             name,
         })
-    }
-}
-
-impl Parser for HandlerBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Handler)?.clone();
-        HandlerBox::read(parser.get_reader(), header)
     }
 }

@@ -1,11 +1,10 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxContainer, BoxHeader, BoxParser, BoxReader, BoxType, ChildBox, Error, HandlerBox, MediaHeaderBox, MediaInfoBox, Parser, Reader};
+use crate::{BoxContainer, BoxHeader, BoxReader, BoxContent, Error, HandlerBox, MediaHeaderBox, MediaInfoBox, Reader};
 
 // https://developer.apple.com/documentation/quicktime-file-format/media_atom
 #[derive(Clone, Debug)]
 pub struct MediaBox {
-    pub header: BoxHeader,
     pub media_header: MediaHeaderBox,
     pub handler: Option<HandlerBox>,
     pub info: Option<MediaInfoBox>
@@ -19,9 +18,9 @@ impl Reader for MediaBox {
         let mut info: Option<MediaInfoBox> = None;
         for child in content.children {
             match child {
-                ChildBox::Mdhd(b) => media_header = Some(b),
-                ChildBox::Hdlr(b) => handler = Some(b),
-                ChildBox::Minf(b) => info = Some(b),
+                BoxContent::Mdhd(b) => media_header = Some(b),
+                BoxContent::Hdlr(b) => handler = Some(b),
+                BoxContent::Minf(b) => info = Some(b),
                 _ => {
                     println!("Mdia: TODO not implemented {:?}", child);
                 },
@@ -32,17 +31,9 @@ impl Reader for MediaBox {
             return Err(Error::BoxNotFound("Mdia: mdhd box is mandatory".to_owned()));
         }
         Ok(Self {
-            header,
             media_header: media_header.unwrap(),
             handler,
             info,
         })
-    }
-}
-
-impl Parser for MediaBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Media)?.clone();
-        MediaBox::read(parser.get_reader(), header)
     }
 }

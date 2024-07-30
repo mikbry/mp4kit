@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Parser, Reader};
+use crate::{BoxHeader, BoxReader, Error, Reader};
 
 // https://developer.apple.com/documentation/quicktime-file-format/time-to-sample_atom/time-to-sample_table
 #[derive(Clone, Debug)]
@@ -28,12 +28,5 @@ impl Reader for TimeToSampleBox {
             flags,
             table,
         })
-    }
-}
-
-impl Parser for TimeToSampleBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::TimeToSample)?.clone();
-        TimeToSampleBox::read(parser.get_reader(), header)
     }
 }

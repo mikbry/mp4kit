@@ -63,7 +63,7 @@ pub use ctts::CompositionOffsetBox as CompositionOffsetBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct BoxHeader {
     pub name: BoxType,
     pub start: u64,
@@ -119,7 +119,20 @@ impl Parser for BoxHeader {
 }
 
 #[derive(Clone, Debug)]
-pub enum ChildBox {
+pub struct SkipBox {
+
+}
+
+impl Reader for SkipBox {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
+        header.skip_content(reader, 0)?;
+        Ok(Self {
+        })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub enum BoxContent {
     Ftyp(FtypBox),
     Moov(MoovBox),
     Mvhd(MvhdBox),
@@ -137,8 +150,7 @@ pub enum ChildBox {
     Vmhd(VideoInfoBox),
     Smhd(SoundInfoBox),
     Dinf(DataInfoBox),
-    // Dref(DataReferenceBox), // Dref isonly present in Dinf
-
+    // Dref(DataReferenceBox), // Dref is only present in Dinf
     Stbl(SampleTableBox),
     Stsd(VideoSampleDescriptionBox),
     Stts(TimeToSampleBox),
@@ -149,120 +161,120 @@ pub enum ChildBox {
     Co64(ChunkOffset64Box),
     Ctts(CompositionOffsetBox),
 
-    Unknown(BoxHeader),
+    Unknown(SkipBox),
 }
 
 #[derive(Clone, Debug)]
 pub struct BoxContainer {
-    pub children: Vec<ChildBox>,
+    pub children: Vec<BoxContent>,
     // TODO add rules
 }
 
 impl BoxContainer {
-    fn read_box<'a, T: Read + Seek>(reader: &mut BoxReader<'a, T>, header: BoxHeader) -> Result<ChildBox, Error> {
+    fn read_box<'a, T: Read + Seek>(reader: &mut BoxReader<'a, T>, header: BoxHeader) -> Result<BoxContent, Error> {
         let result = match header.name {
             BoxType::FileType => {
                 let ftyp_box = FtypBox::read(reader, header)?;
-                ChildBox::Ftyp(ftyp_box)
+                BoxContent::Ftyp(ftyp_box)
             },
             BoxType::Movie => {
                 let moov_box = MoovBox::read(reader, header)?;
-                ChildBox::Moov(moov_box)
+                BoxContent::Moov(moov_box)
             },
             BoxType::MovieHeader => {
                 let mvhd_box = MvhdBox::read(reader, header)?;
-                ChildBox::Mvhd(mvhd_box)
+                BoxContent::Mvhd(mvhd_box)
             },
             BoxType::Track => {
                 let track_box = TrackBox::read(reader, header)?;
-                ChildBox::Trak(track_box)
+                BoxContent::Trak(track_box)
             },
             BoxType::MediaData => {
                 let mediadata_box = MediaDataBox::read(reader, header)?;
-                ChildBox::Mdat(mediadata_box)
+                BoxContent::Mdat(mediadata_box)
             },
             BoxType::UserData => {
                 let userdata_box = UserDataBox::read(reader, header)?;
-                ChildBox::Udta(userdata_box)
+                BoxContent::Udta(userdata_box)
             },
             BoxType::Wide => {
                 let wide_box = WideBox::read(reader, header)?;
-                ChildBox::Wide(wide_box)
+                BoxContent::Wide(wide_box)
             },
             BoxType::TrackHeader => {
                 let trackheader_box = TrackHeaderBox::read(reader, header)?;
-                ChildBox::Tkhd(trackheader_box)
+                BoxContent::Tkhd(trackheader_box)
             },
             BoxType::Edit => {
                 let edit_box = EditBox::read(reader, header)?;
-                ChildBox::Edts(edit_box)
+                BoxContent::Edts(edit_box)
             },
             BoxType::Media => {
                 let media_box = MediaBox::read(reader, header)?;
-                ChildBox::Mdia(media_box)
+                BoxContent::Mdia(media_box)
             },
             BoxType::MediaHeader => {
                 let mediaheader_box = MediaHeaderBox::read(reader, header)?;
-                ChildBox::Mdhd(mediaheader_box)
+                BoxContent::Mdhd(mediaheader_box)
             },
             BoxType::Handler => {
                 let handler_box = HandlerBox::read(reader, header)?;
-                ChildBox::Hdlr(handler_box)
+                BoxContent::Hdlr(handler_box)
             },
             BoxType::MediaInfo => {
                 let mediainfo_box = MediaInfoBox::read(reader, header)?;
-                ChildBox::Minf(mediainfo_box)
+                BoxContent::Minf(mediainfo_box)
             },
             BoxType::VideoInfo => {
                 let videoinfo_box = VideoInfoBox::read(reader, header)?;
-                ChildBox::Vmhd(videoinfo_box)
+                BoxContent::Vmhd(videoinfo_box)
             },
             BoxType::SoundInfo => {
                 let soundinfo_box = SoundInfoBox::read(reader, header)?;
-                ChildBox::Smhd(soundinfo_box)
+                BoxContent::Smhd(soundinfo_box)
             },
             BoxType::DataInfo => {
                 let datainfo_box = DataInfoBox::read(reader, header)?;
-                ChildBox::Dinf(datainfo_box)
+                BoxContent::Dinf(datainfo_box)
             },
             BoxType::SampleTable => {
                 let sampletable_box = SampleTableBox::read(reader, header)?;
-                ChildBox::Stbl(sampletable_box)
+                BoxContent::Stbl(sampletable_box)
             },
             BoxType::VideoSampleDescription => {
                 let videosampledescription_box = VideoSampleDescriptionBox::read(reader, header)?;
-                ChildBox::Stsd(videosampledescription_box)
+                BoxContent::Stsd(videosampledescription_box)
             },
             BoxType::TimeToSample => {
                 let timetosample_box = TimeToSampleBox::read(reader, header)?;
-                ChildBox::Stts(timetosample_box)
+                BoxContent::Stts(timetosample_box)
             },
             BoxType::SampleToChunk => {
                 let sampletochunk_box = SampleToChunkBox::read(reader, header)?;
-                ChildBox::Stsc(sampletochunk_box)
+                BoxContent::Stsc(sampletochunk_box)
             },
             BoxType::SampleSize => {
                 let samplesize_box = SampleSizeBox::read(reader, header)?;
-                ChildBox::Stsz(samplesize_box)
+                BoxContent::Stsz(samplesize_box)
             },
             BoxType::SyncSample => {
                 let syncsample_box = SyncSampleBox::read(reader, header)?;
-                ChildBox::Stss(syncsample_box)
+                BoxContent::Stss(syncsample_box)
             },
             BoxType::ChunkOffset => {
                 let chunkoffset_box = ChunkOffsetBox::read(reader, header)?;
-                ChildBox::Stco(chunkoffset_box)
+                BoxContent::Stco(chunkoffset_box)
             },
             BoxType::ChunkOffset64 => {
                 let chunkoffset_box = ChunkOffset64Box::read(reader, header)?;
-                ChildBox::Co64(chunkoffset_box)
+                BoxContent::Co64(chunkoffset_box)
             },
             BoxType::CompositionOffset => {
                 let compositionoffset_box = CompositionOffsetBox::read(reader, header)?;
-                ChildBox::Ctts(compositionoffset_box)
+                BoxContent::Ctts(compositionoffset_box)
             },
             _ => {
-                ChildBox::Unknown(header)
+                BoxContent::Unknown(SkipBox::read(reader, header)?)
             },
         };
         Ok(result)
@@ -271,7 +283,7 @@ impl BoxContainer {
 
 impl Reader for BoxContainer {
     fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
-        let mut children: Vec<ChildBox> = Vec::new();
+        let mut children: Vec<BoxContent> = Vec::new();
         let mut content_parsed_size: u64  = 0;
         loop  {
             if header.size > 0 && content_parsed_size >= header.size - HEADER_LENGTH {
@@ -288,10 +300,6 @@ impl Reader for BoxContainer {
             };
             let child = BoxContainer::read_box(reader, child_header)?;
             println!("{:?}: {:?}", header.name, child);
-            
-            if let ChildBox::Unknown(unknown_box) = child {
-                unknown_box.skip_content(reader, 0)?;
-            }
 
             children.push(child);
                     

@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxContainer, BoxHeader, BoxParser, ChildBox, Error, FtypBox, MediaDataBox, MoovBox, Reader};
+use crate::{BoxContainer, BoxHeader, BoxParser, BoxContent, Error, FtypBox, MediaDataBox, MoovBox, Reader};
 
 #[derive(Clone, Debug)]
 pub struct Mp4 {
@@ -19,12 +19,12 @@ impl Mp4 {
         let mut is_wide = false;
         for child in content.children {
             match child {
-                ChildBox::Ftyp(b) => ftyp = Some(b),
-                ChildBox::Moov(b) => moov = Some(b),
-                ChildBox::Wide(_) => {
+                BoxContent::Ftyp(b) => ftyp = Some(b),
+                BoxContent::Moov(b) => moov = Some(b),
+                BoxContent::Wide(_) => {
                     is_wide = true;
                 }
-                ChildBox::Mdat(b) => mdat = Some(b),
+                BoxContent::Mdat(b) => mdat = Some(b),
                 _ => (),
             }
             // is_wide = false;

@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxHeader, BoxParser, BoxReader, BoxType, Error, Parser, Reader, HEADER_LENGTH};
+use crate::{BoxHeader, BoxReader, BoxType, Error, Reader, HEADER_LENGTH};
 
 // https://developer.apple.com/documentation/quicktime-file-format/media_data_reference_atom
 #[derive(Clone, Debug)]
@@ -60,13 +60,6 @@ impl Reader for DataReferenceBox {
 
             references,
         })
-    }
-}
-
-impl Parser for DataReferenceBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::DataRef)?.clone();
-        DataReferenceBox::read(parser.get_reader(), header)
     }
 }
 

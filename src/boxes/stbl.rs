@@ -1,6 +1,6 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxContainer, BoxHeader, BoxParser, BoxReader, BoxType, Error, Parser, Reader};
+use crate::{BoxContainer, BoxHeader, BoxReader, Error, Reader};
 
 // https://developer.apple.com/documentation/quicktime-file-format/sample_table_atom
 #[derive(Clone, Debug)]
@@ -17,12 +17,5 @@ impl Reader for SampleTableBox {
             header,
             content,
         })
-    }
-}
-
-impl Parser for SampleTableBox {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::SampleTable)?.clone();
-        SampleTableBox::read(parser.get_reader(), header)
     }
 }
