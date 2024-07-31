@@ -5,8 +5,6 @@ use crate::{BoxHeader, BoxReader, BoxType, Error, Reader, HEADER_LENGTH};
 // https://developer.apple.com/documentation/quicktime-file-format/media_data_reference_atom
 #[derive(Clone, Debug)]
 pub struct DataReferenceBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -53,8 +51,6 @@ impl Reader for DataReferenceBox {
         }
 
         Ok(Self {
-            header,
-
             version,
             flags,
 
@@ -65,7 +61,6 @@ impl Reader for DataReferenceBox {
 
 #[derive(Debug, Clone)]
 pub struct UrlBox {
-    pub header: BoxHeader,
     pub version: u8,
     pub flags: u32,
     pub location: String,
@@ -77,7 +72,6 @@ impl Reader for UrlBox {
         let len = header.size - HEADER_LENGTH - 4; 
         let location = reader.read_string(len as usize)?;
         Ok(Self {
-            header,
             version,
             flags,
             location,

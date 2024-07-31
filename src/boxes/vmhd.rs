@@ -5,8 +5,6 @@ use crate::{BoxHeader, BoxReader, Error, Reader};
 // https://developer.apple.com/documentation/quicktime-file-format/video_media_information_header_atom
 #[derive(Clone, Debug)]
 pub struct VideoInfoBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -15,7 +13,7 @@ pub struct VideoInfoBox {
 }
 
 impl Reader for VideoInfoBox {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, _header: BoxHeader) -> Result<Self, Error> {
         let (version, flags) = reader.read_header_extra()?;
 
         let graphics_mode = reader.read_u16()?;
@@ -26,8 +24,6 @@ impl Reader for VideoInfoBox {
         );
     
         Ok(Self {
-            header,
-
             version,
             flags,
 

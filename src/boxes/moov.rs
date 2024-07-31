@@ -1,21 +1,20 @@
 use std::io::{Read, Seek};
 
-use crate::{BoxContainer, BoxHeader, BoxReader, BoxContent, Error, MvhdBox, Reader, TrackBox};
+use crate::{ListBox, BoxHeader, BoxReader, BoxContent, Error, MvhdBox, Reader, TrackBox};
 
 // https://developer.apple.com/documentation/quicktime-file-format/movie_atom
 #[derive(Clone, Debug)]
 pub struct MoovBox {
-    pub header: BoxHeader,
     pub mvhd: MvhdBox,
 }
 
 impl Reader for MoovBox {
     fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
-        let content = BoxContainer::read(reader, header)?;
+        let content = ListBox::read(reader, header)?;
         let mut mvhd: Option<MvhdBox> = None;
         let mut tracks: Vec<TrackBox> = Vec::new();
         for child in content.children {
-            match child {
+            match child.content {
                 BoxContent::Mvhd(b) => mvhd = Some(b),
                 BoxContent::Trak(b) => tracks.push(b),
                 _ => (),
@@ -30,7 +29,6 @@ impl Reader for MoovBox {
         }
     
         Ok(Self {
-            header,
             mvhd: mvhd.unwrap(),
         })
     }

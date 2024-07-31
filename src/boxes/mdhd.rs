@@ -23,7 +23,7 @@ pub struct MediaHeaderBox {
 impl Reader for MediaHeaderBox {
     fn read<'a, T: Read + Seek>(
         reader: &mut BoxReader<T>,
-        header: BoxHeader,
+        _header: BoxHeader,
     ) -> Result<Self, Error> {
         let (version, flags) = reader.read_header_extra()?;
 

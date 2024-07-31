@@ -11,7 +11,6 @@ pub struct HandlerBox {
     pub component_type: String, // FourCC
     pub handler: String, // FourCC
     pub name: String,
-
 }
 
 impl Reader for HandlerBox {

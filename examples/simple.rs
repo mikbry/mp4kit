@@ -1,11 +1,9 @@
 use std::{fs::File, io::{BufReader, Read, Seek}};
 
-use mp4kit::{parse, BoxParser, Error, Mp4};
+use mp4kit::{Error, Mp4};
 
 fn parse_mp4<'a, T: Read + Seek>(reader: &'a mut T) -> Result<(), Error> {
-    let parser: BoxParser<T> = parse(reader);
-
-    let mp4 = Mp4::parse(parser)?;
+    let mp4 = Mp4::parse(reader)?;
     println!("Video: {mp4:?}");
 
     Ok(())

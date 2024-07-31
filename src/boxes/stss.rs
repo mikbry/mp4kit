@@ -5,8 +5,6 @@ use crate::{BoxHeader, BoxReader, Error, Reader};
 // https://developer.apple.com/documentation/quicktime-file-format/sample-to-chunk_atom
 #[derive(Clone, Debug)]
 pub struct SyncSampleBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -14,7 +12,7 @@ pub struct SyncSampleBox {
 }
 
 impl Reader for SyncSampleBox {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, _header: BoxHeader) -> Result<Self, Error> {
         let (version, flags) = reader.read_header_extra()?;
 
         let sample_count = reader.read_u32()?;
@@ -23,7 +21,6 @@ impl Reader for SyncSampleBox {
             samples.push(reader.read_u32()?);
         }
         Ok(Self {
-            header,
             version,
             flags,
             samples,

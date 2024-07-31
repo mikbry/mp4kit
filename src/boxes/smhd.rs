@@ -5,8 +5,6 @@ use crate::{BoxHeader, BoxReader, Error, Reader};
 // https://developer.apple.com/documentation/quicktime-file-format/sound_media_information_header_atom
 #[derive(Clone, Debug)]
 pub struct SoundInfoBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -14,15 +12,13 @@ pub struct SoundInfoBox {
 }
 
 impl Reader for SoundInfoBox {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, _header: BoxHeader) -> Result<Self, Error> {
         let (version, flags) = reader.read_header_extra()?;
 
         let balance = reader.read_u16()?;
         reader.skip(2)?;
     
         Ok(Self {
-            header,
-
             version,
             flags,
 

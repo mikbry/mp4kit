@@ -5,9 +5,7 @@ use crate::{BoxHeader, BoxReader, BoxType, EditListBox, Error, Reader, HEADER_LE
 // https://developer.apple.com/documentation/quicktime-file-format/edit_atom
 #[derive(Clone, Debug)]
 pub struct EditBox {
-    pub header: BoxHeader,
     pub list: Option<EditListBox>,
-
 }
 
 impl Reader for EditBox {
@@ -25,7 +23,6 @@ impl Reader for EditBox {
             }
         }
         Ok(Self {
-            header,
             list,
         })
     }

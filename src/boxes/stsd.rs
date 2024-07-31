@@ -5,8 +5,6 @@ use crate::{BoxHeader, BoxReader, BoxType, Error, Reader};
 // https://developer.apple.com/documentation/quicktime-file-format/video_sample_description
 #[derive(Clone, Debug)]
 pub struct VideoSampleDescriptionBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -19,7 +17,7 @@ pub enum VideoCodec {
 }
 
 impl Reader for VideoSampleDescriptionBox {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, _header: BoxHeader) -> Result<Self, Error> {
         let (version, flags) = reader.read_header_extra()?;
 
         let entry_count = reader.read_u32()?;
@@ -40,7 +38,6 @@ impl Reader for VideoSampleDescriptionBox {
         };
 
         Ok(Self {
-            header,
             version,
             flags,
             codec,

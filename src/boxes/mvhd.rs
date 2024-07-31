@@ -5,8 +5,6 @@ use crate::{BoxHeader, BoxReader, Error, Matrix, Reader};
 // https://developer.apple.com/documentation/quicktime-file-format/movie_header_atom
 #[derive(Clone, Debug)]
 pub struct MvhdBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -71,7 +69,6 @@ impl Reader for MvhdBox {
         let next_track_id = reader.read_u32()?;
     
         Ok(Self {
-            header,
             version,
             flags,
             creation_time,

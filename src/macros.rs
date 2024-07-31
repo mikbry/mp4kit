@@ -1,13 +1,13 @@
 
 #[macro_export]
-macro_rules! box_definitions {
-    ($($(#[$attr:meta])* $boxenum:ident $boxtype:expr),*,) => {
+macro_rules! box_types {
+    ($($boxenum:tt $boxtype:expr),*,) => {
         use std::fmt;
         use $crate::FourCC;
     
         #[derive(Clone, Copy, PartialEq, Eq)]
         pub enum BoxType {
-            $($(#[$attr])* $boxenum),*,
+            $($boxenum),*,
             Root(u32),
             Unknown(u32),
         }
@@ -16,7 +16,7 @@ macro_rules! box_definitions {
             fn from(t: u32) -> BoxType {
                 use self::BoxType::*;
                 match t {
-                    $($(#[$attr])* $boxtype => $boxenum),*,
+                    $($boxtype => $boxenum),*,
                     _ => Unknown(t),
                 }
             }
@@ -26,7 +26,7 @@ macro_rules! box_definitions {
             fn from(b: BoxType) -> u32 {
                 use self::BoxType::*;
                 match b {
-                    $($(#[$attr])* $boxenum => $boxtype),*,
+                    $($boxenum => $boxtype),*,
                     Unknown(t) => t,
                     Root(t) => t,
                 }

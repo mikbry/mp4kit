@@ -5,8 +5,6 @@ use crate::{BoxHeader, BoxReader, Error, Reader};
 // https://developer.apple.com/documentation/quicktime-file-format/edit_atom/edit_list_atom
 #[derive(Clone, Debug)]
 pub struct EditListBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -22,7 +20,7 @@ pub struct EditEntry {
 }
 
 impl Reader for EditListBox {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, _header: BoxHeader) -> Result<Self, Error> {
         let (version, flags) = reader.read_header_extra()?;
         let entry_count = reader.read_u32()?;
         let mut entries = Vec::with_capacity(entry_count as usize);
@@ -54,8 +52,6 @@ impl Reader for EditListBox {
         }
     
         Ok(Self {
-            header,
-
             version,
             flags,
 

@@ -5,7 +5,6 @@ use crate::{BoxHeader, BoxReader, Error, Matrix, Reader};
 // https://developer.apple.com/documentation/quicktime-file-format/track_header_atom
 #[derive(Clone, Debug)]
 pub struct TrackHeaderBox {
-    pub header: BoxHeader,
 
     pub version: u8,
     pub flags: u32,
@@ -62,7 +61,6 @@ impl Reader for TrackHeaderBox {
         let height = reader.read_u32()?;
 
         Ok(Self {
-            header,
             version,
             flags,
             creation_time,

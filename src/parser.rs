@@ -14,7 +14,7 @@ pub struct BoxReader<'a, T: 'a> {
 }
 
 impl<'a, T: Read + Seek> BoxReader<'a, T> {
-    fn new(src: &'a mut T) -> BoxReader<T> {
+    pub fn new(src: &'a mut T) -> BoxReader<T> {
         Self {
             src,
             error: None,

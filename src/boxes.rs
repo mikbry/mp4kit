@@ -1,65 +1,64 @@
-
-pub mod ftyp;
-pub mod moov;
-pub mod mvhd;
-pub mod trak;
-pub mod mdat;
-pub mod udta;
-pub mod wide;
-pub mod tkhd;
-pub mod edts;
-pub mod elst;
-pub mod mdia;
-pub mod mdhd;
-pub mod hdlr;
-pub mod minf;
-pub mod vmhd;
-pub mod smhd;
 pub mod dinf;
 pub mod dref;
+pub mod edts;
+pub mod elst;
+pub mod ftyp;
+pub mod hdlr;
+pub mod mdat;
+pub mod mdhd;
+pub mod mdia;
+pub mod minf;
+pub mod moov;
+pub mod mvhd;
+pub mod smhd;
+pub mod tkhd;
+pub mod trak;
+pub mod udta;
+pub mod vmhd;
+pub mod wide;
 
-pub mod stbl;
-pub mod stsd;
-pub mod stts;
-pub mod stsc;
-pub mod stsz;
-pub mod stss;
-pub mod stco;
 pub mod co64;
 pub mod ctts;
+pub mod stbl;
+pub mod stco;
+pub mod stsc;
+pub mod stsd;
+pub mod stss;
+pub mod stsz;
+pub mod stts;
 
 use std::io::{Read, Seek};
 
-use crate::{box_definitions, BoxParser, BoxReader, Error, Parser, Reader};
+use crate::{box_types, BoxParser, BoxReader, Error, Parser, Reader};
 
-pub use ftyp::FtypBox as FtypBox;
-pub use moov::MoovBox as MoovBox;
-pub use mvhd::MvhdBox as MvhdBox;
-pub use tkhd::TrackHeaderBox as TrackHeaderBox;
-pub use trak::TrackBox as TrackBox;
-pub use mdat::MediaDataBox as MediaDataBox;
-pub use udta::UserDataBox as UserDataBox;
-pub use wide::WideBox as WideBox;
-pub use edts::EditBox as EditBox;
-pub use elst::EditListBox as EditListBox;
-pub use mdia::MediaBox as MediaBox;
-pub use mdhd::MediaHeaderBox as MediaHeaderBox;
-pub use hdlr::HandlerBox as HandlerBox;
-pub use minf::MediaInfoBox as MediaInfoBox;
-pub use vmhd::VideoInfoBox as VideoInfoBox;
-pub use smhd::SoundInfoBox as SoundInfoBox;
-pub use dinf::DataInfoBox as DataInfoBox;
+pub use dinf::DataInfoBox;
 pub use dref::DataReferenceBox;
+pub use edts::EditBox;
+pub use elst::EditListBox;
+pub use ftyp::FtypBox;
+pub use hdlr::HandlerBox;
+pub use mdat::MediaDataBox;
+pub use mdhd::MediaHeaderBox;
+pub use mdia::MediaBox;
+pub use minf::MediaInfoBox;
+pub use moov::MoovBox;
+pub use mvhd::MvhdBox;
+pub use smhd::SoundInfoBox;
+pub use tkhd::TrackHeaderBox;
+pub use trak::TrackBox;
+pub use udta::UserDataBox;
+pub use vmhd::VideoInfoBox;
+pub use wide::WideBox;
 
-pub use stbl::SampleTableBox as SampleTableBox;
-pub use stsd::VideoSampleDescriptionBox as VideoSampleDescriptionBox;
-pub use stts::TimeToSampleBox as TimeToSampleBox;
-pub use stsc::SampleToChunkBox as SampleToChunkBox;
-pub use stsz::SampleSizeBox as SampleSizeBox;
-pub use stss::SyncSampleBox as SyncSampleBox;
-pub use stco::ChunkOffsetBox as ChunkOffsetBox;
-pub use co64::ChunkOffset64Box as ChunkOffset64Box;
-pub use ctts::CompositionOffsetBox as CompositionOffsetBox;
+pub use co64::ChunkOffset64Box;
+pub use ctts::CompositionOffsetBox;
+pub use stbl::SampleTableBox;
+pub use stco::ChunkOffsetBox;
+pub use stsc::SampleToChunkBox;
+pub use stsd::VideoSampleDescriptionBox;
+pub use stss::SyncSampleBox;
+pub use stsz::SampleSizeBox;
+pub use stts::TimeToSampleBox;
 
 pub const HEADER_LENGTH: u64 = 8;
 
@@ -71,7 +70,11 @@ pub struct BoxHeader {
 }
 
 impl BoxHeader {
-    pub fn skip_content<'a, T: Read + Seek>(&self, reader: &mut BoxReader<'a, T>, offset: u64) -> Result<(), Error> {
+    pub fn skip_content<'a, T: Read + Seek>(
+        &self,
+        reader: &mut BoxReader<'a, T>,
+        offset: u64,
+    ) -> Result<(), Error> {
         let content_size = self.size - HEADER_LENGTH - offset;
         reader.skip(content_size)?;
         Ok(())
@@ -81,12 +84,13 @@ impl BoxHeader {
         Self {
             name: BoxType::Root(FourCC::from_str(name)),
             start: 0,
-            size: 0,
+            size: HEADER_LENGTH,
         }
     }
 
     fn read<'a, T: Read + Seek>(reader: &mut BoxReader<'a, T>) -> Result<Self, Error> {
-        let start = reader.stream_position()
+        let start = reader
+            .stream_position()
             .map_err(|error| Error::InvalidData(error.to_string()))?;
         let mut size: u64 = reader.read_u32()? as u64;
         let four_cc = reader.read_u32()?;
@@ -119,15 +123,70 @@ impl Parser for BoxHeader {
 }
 
 #[derive(Clone, Debug)]
-pub struct SkipBox {
-
+pub struct ListBox {
+    pub children: Vec<BoxElement>,
 }
 
+impl ListBox {
+    pub fn iter(header: BoxHeader) -> ListBoxIterator {
+        ListBoxIterator {
+            content_parsed_size: 0,
+            content_size: header.size - HEADER_LENGTH,
+        }
+    }
+}
+impl Reader for ListBox {
+    fn read<'a, T: Read + Seek>(
+        reader: &mut BoxReader<T>,
+        header: BoxHeader,
+    ) -> Result<Self, Error> {
+        let mut children: Vec<BoxElement> = Vec::new();
+        let mut iter = Self::iter(header);
+        while let Some(child) = iter.next(reader)? {
+            println!("{:?}: {:?}", header.name, child);
+            children.push(child);
+        }
+        Ok(Self { children })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ListBoxIterator {
+    content_parsed_size: u64,
+    content_size: u64,
+}
+
+impl ListBoxIterator {
+    pub fn next<'a, T: Read + Seek>(
+        &mut self,
+        reader: &mut BoxReader<T>,
+    ) -> Result<Option<BoxElement>, Error> {
+        if self.content_size > 0 && self.content_parsed_size >= self.content_size {
+            return Ok(None);
+        }
+        let child_header = match BoxHeader::read(reader) {
+            Ok(header) => header,
+            Err(error) => {
+                if error == Error::EOF() {
+                    return Ok(None);
+                }
+                return Err(error);
+            }
+        };
+        self.content_parsed_size += child_header.size;
+        Ok(Some(BoxElement::read(reader, child_header)?))
+    }
+}
+#[derive(Clone, Debug)]
+pub struct SkipBox {}
+
 impl Reader for SkipBox {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
+    fn read<'a, T: Read + Seek>(
+        reader: &mut BoxReader<T>,
+        header: BoxHeader,
+    ) -> Result<Self, Error> {
         header.skip_content(reader, 0)?;
-        Ok(Self {
-        })
+        Ok(Self {})
     }
 }
 
@@ -164,168 +223,71 @@ pub enum BoxContent {
     Unknown(SkipBox),
 }
 
-#[derive(Clone, Debug)]
-pub struct BoxContainer {
-    pub children: Vec<BoxContent>,
-    // TODO add rules
-}
-
-impl BoxContainer {
-    fn read_box<'a, T: Read + Seek>(reader: &mut BoxReader<'a, T>, header: BoxHeader) -> Result<BoxContent, Error> {
+impl Reader for BoxContent {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
         let result = match header.name {
-            BoxType::FileType => {
-                let ftyp_box = FtypBox::read(reader, header)?;
-                BoxContent::Ftyp(ftyp_box)
-            },
-            BoxType::Movie => {
-                let moov_box = MoovBox::read(reader, header)?;
-                BoxContent::Moov(moov_box)
-            },
-            BoxType::MovieHeader => {
-                let mvhd_box = MvhdBox::read(reader, header)?;
-                BoxContent::Mvhd(mvhd_box)
-            },
-            BoxType::Track => {
-                let track_box = TrackBox::read(reader, header)?;
-                BoxContent::Trak(track_box)
-            },
-            BoxType::MediaData => {
-                let mediadata_box = MediaDataBox::read(reader, header)?;
-                BoxContent::Mdat(mediadata_box)
-            },
-            BoxType::UserData => {
-                let userdata_box = UserDataBox::read(reader, header)?;
-                BoxContent::Udta(userdata_box)
-            },
-            BoxType::Wide => {
-                let wide_box = WideBox::read(reader, header)?;
-                BoxContent::Wide(wide_box)
-            },
-            BoxType::TrackHeader => {
-                let trackheader_box = TrackHeaderBox::read(reader, header)?;
-                BoxContent::Tkhd(trackheader_box)
-            },
-            BoxType::Edit => {
-                let edit_box = EditBox::read(reader, header)?;
-                BoxContent::Edts(edit_box)
-            },
-            BoxType::Media => {
-                let media_box = MediaBox::read(reader, header)?;
-                BoxContent::Mdia(media_box)
-            },
-            BoxType::MediaHeader => {
-                let mediaheader_box = MediaHeaderBox::read(reader, header)?;
-                BoxContent::Mdhd(mediaheader_box)
-            },
-            BoxType::Handler => {
-                let handler_box = HandlerBox::read(reader, header)?;
-                BoxContent::Hdlr(handler_box)
-            },
-            BoxType::MediaInfo => {
-                let mediainfo_box = MediaInfoBox::read(reader, header)?;
-                BoxContent::Minf(mediainfo_box)
-            },
-            BoxType::VideoInfo => {
-                let videoinfo_box = VideoInfoBox::read(reader, header)?;
-                BoxContent::Vmhd(videoinfo_box)
-            },
-            BoxType::SoundInfo => {
-                let soundinfo_box = SoundInfoBox::read(reader, header)?;
-                BoxContent::Smhd(soundinfo_box)
-            },
-            BoxType::DataInfo => {
-                let datainfo_box = DataInfoBox::read(reader, header)?;
-                BoxContent::Dinf(datainfo_box)
-            },
-            BoxType::SampleTable => {
-                let sampletable_box = SampleTableBox::read(reader, header)?;
-                BoxContent::Stbl(sampletable_box)
-            },
+            BoxType::FileType => BoxContent::Ftyp(FtypBox::read(reader, header)?),
+            BoxType::Movie => BoxContent::Moov(MoovBox::read(reader, header)?),
+            BoxType::MovieHeader => BoxContent::Mvhd(MvhdBox::read(reader, header)?),
+            BoxType::Track => BoxContent::Trak(TrackBox::read(reader, header)?),
+            BoxType::MediaData => BoxContent::Mdat(MediaDataBox::read(reader, header)?),
+            BoxType::UserData => BoxContent::Udta(UserDataBox::read(reader, header)?),
+            BoxType::Wide => BoxContent::Wide(WideBox::read(reader, header)?),
+            BoxType::TrackHeader => BoxContent::Tkhd(TrackHeaderBox::read(reader, header)?),
+            BoxType::Edit => BoxContent::Edts(EditBox::read(reader, header)?),
+            BoxType::Media => BoxContent::Mdia(MediaBox::read(reader, header)?),
+            BoxType::MediaHeader => BoxContent::Mdhd(MediaHeaderBox::read(reader, header)?),
+            BoxType::Handler => BoxContent::Hdlr(HandlerBox::read(reader, header)?),
+            BoxType::MediaInfo => BoxContent::Minf(MediaInfoBox::read(reader, header)?),
+            BoxType::VideoInfo => BoxContent::Vmhd(VideoInfoBox::read(reader, header)?),
+            BoxType::SoundInfo => BoxContent::Smhd(SoundInfoBox::read(reader, header)?),
+            BoxType::DataInfo => BoxContent::Dinf(DataInfoBox::read(reader, header)?),
+            BoxType::SampleTable => BoxContent::Stbl(SampleTableBox::read(reader, header)?),
             BoxType::VideoSampleDescription => {
-                let videosampledescription_box = VideoSampleDescriptionBox::read(reader, header)?;
-                BoxContent::Stsd(videosampledescription_box)
-            },
-            BoxType::TimeToSample => {
-                let timetosample_box = TimeToSampleBox::read(reader, header)?;
-                BoxContent::Stts(timetosample_box)
-            },
-            BoxType::SampleToChunk => {
-                let sampletochunk_box = SampleToChunkBox::read(reader, header)?;
-                BoxContent::Stsc(sampletochunk_box)
-            },
-            BoxType::SampleSize => {
-                let samplesize_box = SampleSizeBox::read(reader, header)?;
-                BoxContent::Stsz(samplesize_box)
-            },
-            BoxType::SyncSample => {
-                let syncsample_box = SyncSampleBox::read(reader, header)?;
-                BoxContent::Stss(syncsample_box)
-            },
-            BoxType::ChunkOffset => {
-                let chunkoffset_box = ChunkOffsetBox::read(reader, header)?;
-                BoxContent::Stco(chunkoffset_box)
-            },
-            BoxType::ChunkOffset64 => {
-                let chunkoffset_box = ChunkOffset64Box::read(reader, header)?;
-                BoxContent::Co64(chunkoffset_box)
-            },
+                BoxContent::Stsd(VideoSampleDescriptionBox::read(reader, header)?)
+            }
+            BoxType::TimeToSample => BoxContent::Stts(TimeToSampleBox::read(reader, header)?),
+            BoxType::SampleToChunk => BoxContent::Stsc(SampleToChunkBox::read(reader, header)?),
+            BoxType::SampleSize => BoxContent::Stsz(SampleSizeBox::read(reader, header)?),
+            BoxType::SyncSample => BoxContent::Stss(SyncSampleBox::read(reader, header)?),
+            BoxType::ChunkOffset => BoxContent::Stco(ChunkOffsetBox::read(reader, header)?),
+            BoxType::ChunkOffset64 => BoxContent::Co64(ChunkOffset64Box::read(reader, header)?),
             BoxType::CompositionOffset => {
-                let compositionoffset_box = CompositionOffsetBox::read(reader, header)?;
-                BoxContent::Ctts(compositionoffset_box)
-            },
-            _ => {
-                BoxContent::Unknown(SkipBox::read(reader, header)?)
-            },
+                BoxContent::Ctts(CompositionOffsetBox::read(reader, header)?)
+            }
+            _ => BoxContent::Unknown(SkipBox::read(reader, header)?),
         };
         Ok(result)
     }
 }
 
-impl Reader for BoxContainer {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
-        let mut children: Vec<BoxContent> = Vec::new();
-        let mut content_parsed_size: u64  = 0;
-        loop  {
-            if header.size > 0 && content_parsed_size >= header.size - HEADER_LENGTH {
-                break;
-            }
-            let child_header = match BoxHeader::read(reader) {
-                Ok(header) => header,
-                Err(error) => {
-                    if error == Error::EOF() {
-                        break; 
-                    }
-                    return Err(error);
-                },
-            };
-            let child = BoxContainer::read_box(reader, child_header)?;
-            println!("{:?}: {:?}", header.name, child);
+#[derive(Clone, Debug)]
+pub struct BoxElement {
+    pub header: BoxHeader,
+    pub content: BoxContent,
+}
 
-            children.push(child);
-                    
-            content_parsed_size += child_header.size;
-        };
-        Ok(Self {
-            children,
-        })
+impl Reader for BoxElement {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error>
+    where
+        Self: Sized,
+    {
+        let content = BoxContent::read(reader, header)?;
+        Ok(Self { header, content })
     }
 }
 
-impl Parser  for BoxContainer {
-    fn parse<'a, T: Read + Seek>(parser: &mut BoxParser<T>) -> Result<Self, Error> {
-        let header = parser.next_header_with_type(BoxType::Movie)?;
-        BoxContainer::read(parser.get_reader(), header)
-    }
-}
-
-box_definitions!(
+box_types!(
     FileType    0x66747970u32,  // "ftyp"
     Movie       0x6d6f6f76u32,  // "moov"
     MovieHeader 0x6d766864u32,  // "mvhd"
     Track       0x7472616bu32,  // "trak"
     MediaData   0x6d646174u32,  // "mdat"
     UserData    0x75647461u32,  // "udta"
-    Wide        0x77696465u32,  // "wide" 
+    Wide        0x77696465u32,  // "wide"
     TrackHeader 0x746b6864u32,  // "tkhd"
     Edit        0x65647473u32,  // "edts"
     EditList    0x656c7374u32,  // "elst"
@@ -338,7 +300,6 @@ box_definitions!(
     DataInfo    0x64696e66u32,  // "dinf"
     DataRef     0x64726566u32,  // "dref"
     UrlRef      0x75726c20u32,  // "url "
-
     SampleTable 0x7374626cu32,  // "stbl"
     VideoSampleDescription 0x73747364u32, // "stsd"
     TimeToSample 0x73747473u32, // "stts"

@@ -5,8 +5,6 @@ use crate::{BoxHeader, BoxReader, Error, Reader};
 // https://developer.apple.com/documentation/quicktime-file-format/sample_size_atom
 #[derive(Clone, Debug)]
 pub struct SampleSizeBox {
-    pub header: BoxHeader,
-
     pub version: u8,
     pub flags: u32,
 
@@ -15,7 +13,7 @@ pub struct SampleSizeBox {
 }
 
 impl Reader for SampleSizeBox {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
+    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, _header: BoxHeader) -> Result<Self, Error> {
         let (version, flags) = reader.read_header_extra()?;
 
         let sample_size = reader.read_u32()?;
@@ -29,7 +27,6 @@ impl Reader for SampleSizeBox {
         }
 
         Ok(Self {
-            header,
             version,
             flags,
 

@@ -1,21 +1,6 @@
-use std::io::{Read, Seek};
 
-use crate::{BoxContainer, BoxHeader, BoxReader, Error, Reader};
+use crate::ListBox;
 
 // https://developer.apple.com/documentation/quicktime-file-format/base_media_information_atom
-#[derive(Clone, Debug)]
-pub struct MediaInfoBox {
-    pub header: BoxHeader,
-    pub content: BoxContainer,
 
-}
-
-impl Reader for MediaInfoBox {
-    fn read<'a, T: Read + Seek>(reader: &mut BoxReader<T>, header: BoxHeader) -> Result<Self, Error> {
-        let content = BoxContainer::read(reader, header)?;
-        Ok(Self {
-            header,
-            content,
-        })
-    }
-}
+pub type MediaInfoBox = ListBox;
